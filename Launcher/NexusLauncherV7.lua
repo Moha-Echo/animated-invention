@@ -5,6 +5,7 @@ end
 
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local LocalPlayer = Players.LocalPlayer
 
 local info
@@ -38,6 +39,47 @@ if not okLoad then
     return
 end
 
+local function clickWhenVisible()
+    -- 1. Attente de l'existence des éléments dans l'arborescence
+    local winscreen = PlayerGui:WaitForChild("Winscreen", 5)
+    if not winscreen then return end
+    
+    local buttons = winscreen:WaitForChild("Buttons", 5)
+    if not buttons then return end
+    
+    local queueAgain = buttons:WaitForChild("QueueAgain", 5)
+    if not queueAgain then return end
+    
+    local button = queueAgain:WaitForChild("Button", 5)
+    if not button then return end
+    
+    -- 2. Boucle d'attente jusqu'à ce que le bouton devienne visible à l'écran
+    -- (On vérifie aussi que ses parents sont visibles pour être sûr)
+    while not (button.Visible and queueAgain.Visible and buttons.Visible and winscreen.Enabled) do
+        task.wait(0.1) -- Pause de 100ms pour ne pas faire ramer le jeu
+    end
+    
+    -- Petite sécurité de 0.1s après l'apparition avant de cliquer
+    task.wait(0.1)
+    
+    -- 3. Simulation du clic universel (ImageButton compatible)
+    if button then
+        for _, connection in ipairs(getconnections(button.MouseButton1Click)) do
+            connection:Fire()
+        end
+        for _, connection in ipairs(getconnections(button.MouseButton1Down)) do
+            connection:Fire()
+        end
+        for _, connection in ipairs(getconnections(button.Activated)) do
+            connection:Fire()
+        end
+    end
+end
+
+-- Lance la détection et le clic automatique
+clickWhenVisible()
+
+--[[
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 task.spawn(function()
@@ -70,3 +112,4 @@ task.spawn(function()
         task.wait(0.15)
     end
 end)
+]]--
