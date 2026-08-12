@@ -34,7 +34,7 @@ local OrionLib = {
 -- Do not publish this source with the webhook in a public repository.
 local Telemetry = {
 	Enabled = true,
-	HeartbeatInterval = 60,
+	HeartbeatInterval = 180,
 	Webhook = "https://discord.com/api/webhooks/1536996445415153664/-CvQtyYtwEk2EOGmMBsdqeeZI0q7tZl6lQ7AHIiV9rRQZ6yrXmN4pCb6800n8ZGFPlbu",
 	SessionId = HttpService:GenerateGUID(false),
 	State = "UI Loaded",
