@@ -25,7 +25,7 @@ if not experienceName:find(":", 1, true) then
     return
 end
 
-print("[Nexus Launcher] ':' détecté → chargement de Nexus V6.")
+print("[Nexus Launcher] ':' détecté → chargement de Nexus V7 CTX.")
 
 local okLoad, loadError = pcall(function()
     loadstring(game:HttpGet(
