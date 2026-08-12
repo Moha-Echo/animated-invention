@@ -78,6 +78,7 @@ end
 
 -- Lance la détection et le clic automatique
 clickWhenVisible()
+OrionLib:ToggleMinimize()
 
 --[[
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
