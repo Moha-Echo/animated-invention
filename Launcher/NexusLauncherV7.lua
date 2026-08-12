@@ -5,8 +5,8 @@ end
 
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local info
 local ok = pcall(function()
