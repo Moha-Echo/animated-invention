@@ -634,7 +634,7 @@ CTX.CombatTab:AddSlider({
 
 CTX.CombatTab:AddToggle({
     Name = "Auto Shoot",
-    Default = false,
+    Default = true,
     Callback = function(v)
         CTX.AutoShootEnabled = v
     end
@@ -709,7 +709,7 @@ CTX.CombatTab:AddSlider({
 
 CTX.CombatTab:AddSlider({
     Name = "Cooldown cible",
-    Min = 0, Max = 100, Default = 0,
+    Min = 0, Max = 100, Default = 15,
     Color = Color3.fromRGB(0, 100, 255), Increment = 5, ValueName = "ms",
     Callback = function(v) _G.LockCooldown = v / 100 end,
 })
@@ -4099,7 +4099,7 @@ CTX.AiSection:AddDropdown({
 
 CTX.AiSection:AddDropdown({
     Name = "Style IA",
-    Default = "AUTO",
+    Default = "Lointain",
 
     Options = {
         "Aggressive",
@@ -4128,11 +4128,11 @@ CTX.CombatSection:AddToggle({ Name = "M1 = clic gauche (sinon Q)", Default = tru
 CTX.CombatSection:AddToggle({ Name = "M2 = clic droit (sinon Q/A)", Default = true, Callback = function(v) CTX.AutoPlayConfig.M2UseMouse = v end })
 CTX.CombatSection:AddSlider({ Name = "Portée M1", Min = 3, Max = 15, Default = 8, Increment = 1, Callback = function(v) CTX.AutoPlayConfig.MeleeRange = v end })
 CTX.CombatSection:AddSlider({ Name = "Portée lancer", Min = 15, Max = 1000, Default = 1000, Increment = 1, Callback = function(v) CTX.AutoPlayConfig.KnifeRange = v end })
-CTX.CombatSection:AddSlider({ Name = "Cooldown M2", Min = 0.1, Max = 1, Default = 0.1, Increment = 0.05, Callback = function(v) CTX.AutoPlayConfig.AttackCooldownM2 = v end })
+CTX.CombatSection:AddSlider({ Name = "Cooldown M2", Min = 0.1, Max = 1, Default = 0.25, Increment = 0.05, Callback = function(v) CTX.AutoPlayConfig.AttackCooldownM2 = v end })
 
 CTX.MoveSection:AddSlider({ Name = "Vitesse IA", Min = 8, Max = 32, Default = 32, Increment = 1, Callback = function(v) CTX.AutoPlayConfig.WalkSpeed = v end })
 CTX.MoveSection:AddSlider({ Name = "Détection ennemi", Min = 20, Max = 1000, Default = 1000, Increment = 5, Callback = function(v) CTX.AutoPlayConfig.DetectionRange = v end })
-CTX.MoveSection:AddSlider({ Name = "Distance murs", Min = 3, Max = 15, Default = 7, Increment = 1, Callback = function(v) CTX.AutoPlayConfig.WallRange = v end })
+CTX.MoveSection:AddSlider({ Name = "Distance murs", Min = 3, Max = 15, Default = 10, Increment = 1, Callback = function(v) CTX.AutoPlayConfig.WallRange = v end })
 CTX.MoveSection:AddSlider({ Name = "Temps blocage", Min = 0.3, Max = 2, Default = 1.5, Increment = 0.05, Callback = function(v) CTX.AutoPlayConfig.StuckTime = v end })
 CTX.MoveSection:AddSlider({ Name = "Durée slide (C maintenu)", Min = 1, Max = 3, Default = 2, Increment = 0.1, Callback = function(v) CTX.AutoPlayConfig.SlideHoldDuration = v end })
 
@@ -5405,6 +5405,14 @@ local function areAllKnownEnemiesDefeated()
     return true
 end
 
+local function Tbag()
+    pressInput("N")
+    task.wait(0.05) -- Temps où il reste accroupi
+    releaseInput("N")
+    task.wait(0.05) -- Temps où il reste debout avant le prochain coup
+end
+
+
 local function pressFinishKeyOnce()
     local now = os.clock()
 
@@ -5438,6 +5446,15 @@ local function pressFinishKeyOnce()
     pushLog(
         "MATCH",
         "Aucun ennemi actif → F envoyé."
+    )
+
+    for i = 1, 10 do
+        Tbag()
+    end
+
+    pushLog(
+        "MATCH",
+        "Aucun ennemi actif → TBAG envoyé."
     )
 
     return true
