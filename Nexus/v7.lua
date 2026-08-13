@@ -18,11 +18,12 @@ local Workspace = game:GetService("Workspace")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 --========================================================--
 -- CTX : état partagé compact pour réduire les local registers
 --========================================================--
-CTX = {}
+local CTX = {}
 
 for _, guiName in ipairs({"Nexus v2.0", "Nexus v3.0", "Nexus v4.0",  "Nexus v5.0", "Nexus v7.0"}) do
     local old = game:GetService("CoreGui"):FindFirstChild(guiName)
@@ -567,7 +568,7 @@ end
 ------------------------------------------------------------
 -- ORION UI
 ------------------------------------------------------------
-OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/OrionLib/source"))()
+OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/OrionLib/source.lua"))()
 CTX.Window = OrionLib:MakeWindow({
     Name = "Nexus v7.0",
     HidePremium = true,
@@ -1555,7 +1556,6 @@ CTX.CameraSystem = {
     ResizeStart = nil,
     StartSize = nil
 }
-CTX.Lighting = game:GetService("Lighting")
 
 --========================================================--
 -- CONSTANTES UI
@@ -1656,20 +1656,19 @@ function CTX.CameraSystem:SetPosition(corner)
     end
 
     self.Corner = corner
+CTX.config = CTX.CORNER_CONFIG[corner]
 
-    local cornerConfig = CTX.CORNER_CONFIG[corner]   -- ← ici, plus de CTX.config
-
-    if not cornerConfig then
-        cornerConfig = CTX.CORNER_CONFIG["Haut-Droite"]
+    if not CTX.config then
+        CTX.config = CTX.CORNER_CONFIG["Haut-Droite"]
         self.Corner = "Haut-Droite"
     end
 
-    self.Frame.AnchorPoint = cornerConfig.AnchorPoint
+    self.Frame.AnchorPoint = CTX.config.AnchorPoint
 
     if corner == "Custom" then
         self.Frame.Position = self.CustomPosition
     else
-        self.Frame.Position = cornerConfig.Position
+        self.Frame.Position = CTX.config.Position
     end
 end
 
@@ -1874,10 +1873,6 @@ end
 --========================================================--
 
 function CTX.CameraSystem:CreatePlayerClone(player)
-    if not self then
-        return nil
-    end
-
     if not player or not player.Character or not self.WorldModel then
         return nil
     end
@@ -2073,7 +2068,7 @@ end
 --========================================================--
 
 function CTX.CameraSystem:UpdatePlayers(headPosition)
-    if not self or not self.WorldModel or not self.Target then
+    if not self.WorldModel or not self.Target then
         return
     end
 
@@ -2691,6 +2686,217 @@ end)
 --========================================================--
 
 RefreshPlayerList()
+local shopFrame = playerGui:WaitForChild("Shop"):WaitForChild("Frame")
+local container = shopFrame:WaitForChild("Container")
+local cratesFolder = container:WaitForChild("ScrollingFrame"):WaitForChild("Crates")
+local cashTextLabel = shopFrame:WaitForChild("Topbar"):WaitForChild("Cash"):WaitForChild("TextLabel")
+
+-- Références des boutons de la boutique
+local detailsButtons = container:WaitForChild("Details"):WaitForChild("Buttons")
+local globalOpenButton = detailsButtons:WaitForChild("Open"):WaitForChild("Button")
+local globalBuyButton = detailsButtons:WaitForChild("Buy"):WaitForChild("Button")
+
+-- Nouvelles références pour skip et fermer l'aperçu
+local crateOpeningGui = playerGui:WaitForChild("CrateOpening")
+local skipButton = crateOpeningGui:WaitForChild("Frame"):WaitForChild("Skip"):WaitForChild("Button")
+
+local inspectGui = playerGui:WaitForChild("Inspect")
+local leaveButton = inspectGui:WaitForChild("Frame"):WaitForChild("Leave"):WaitForChild("Button")
+
+-- Variables d'état
+local autoCaseEnabled = false
+local selectedCrate = nil
+local casesToOpen = 0 -- 0 = infini
+
+-- Convertisseur de texte d'argent
+local function parseCash(text)
+    if not text then return 0 end
+    text = string.upper(text:gsub("%s+", ""))
+    local multiplier = 1
+    if string.find(text, "K") then
+        multiplier = 1000
+        text = text:gsub("K", "")
+    elseif string.find(text, "M") then
+        multiplier = 1000000
+        text = text:gsub("M", "")
+    elseif string.find(text, "B") then
+        multiplier = 1000000000
+        text = text:gsub("B", "")
+    end
+    local num = tonumber(text)
+    return num and (num * multiplier) or 0
+end
+
+-- Récupération de la liste des caisses
+local function getCrateList()
+    local list = {}
+    for _, crate in pairs(cratesFolder:GetChildren()) do
+        if crate:IsA("Frame") and crate.Name ~= "template" then
+            table.insert(list, crate.Name)
+        end
+    end
+    return list
+end
+
+-- Fonction pour forcer l'affichage de tout le chemin jusqu'au bouton
+local function forceVisibility(object)
+    local current = object
+    while current and current ~= game and current ~= playerGui do
+        if current:IsA("ScreenGui") then
+            current.Enabled = true
+        elseif current:IsA("GuiObject") then
+            current.Visible = true
+        end
+        current = current.Parent
+    end
+end
+
+-- Méthode de clic ultra-robuste universel
+local function secureClick(button)
+    if not button then return end
+    
+    forceVisibility(button)
+    task.wait(0.05)
+    
+    for _, connection in ipairs(getconnections(button.MouseButton1Click)) do
+        connection:Fire()
+    end
+    for _, connection in ipairs(getconnections(button.MouseButton1Down)) do
+        connection:Fire()
+    end
+    for _, connection in ipairs(getconnections(button.Activated)) do
+        connection:Fire()
+    end
+end
+
+-- Logique dédiée à la gestion de la cinématique et de l'aperçu du couteau reçu
+local function handleSkipAndLeave()
+    task.spawn(function()
+        -- 1. Attente courte et clic sur Skip pour passer l'animation de la caisse
+        task.wait(0.1)
+        secureClick(skipButton)
+        
+        -- 2. Attente de 0.5 seconde demandée puis clic sur Leave pour quitter la frame de l'arme obtenue
+        task.wait(0.5)
+        secureClick(leaveButton)
+    end)
+end
+
+--=====================================================
+-- Fenêtre Orion
+--=====================================================
+
+local CaseTab = CTX.Window:MakeTab({Name = "Auto Case", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+local Section = CaseTab:AddSection({Name = "Configuration"})
+
+-- 1. Dropdown
+local CrateDropdown = CaseTab:AddDropdown({
+    Name = "Select Case",
+    Default = "None",
+    Options = getCrateList(),
+    Callback = function(Value)
+        selectedCrate = Value
+        OrionLib:MakeNotification({
+            Name = "Caisse Sélectionnée",
+            Content = "Tu as choisi : " .. Value,
+            Time = 3
+        })
+        
+        local crateFrame = cratesFolder:FindFirstChild(selectedCrate)
+        if crateFrame and crateFrame:FindFirstChild("Button") then
+            secureClick(crateFrame.Button)
+        end
+    end
+})
+
+-- 2. Textbox
+CaseTab:AddTextbox({
+    Name = "Select Number (0 = Inf)",
+    Default = "0",
+    TextDisappear = false,
+    Callback = function(Value)
+        local num = tonumber(Value)
+        casesToOpen = (num and num >= 0) and num or 0
+    end
+})
+
+-- Boutons Manuels
+CaseTab:AddButton({
+    Name = "Buy Once",
+    Callback = function()
+        secureClick(globalBuyButton)
+    end
+})
+
+CaseTab:AddButton({
+    Name = "Open Once",
+    Callback = function()
+        secureClick(globalOpenButton)
+        handleSkipAndLeave() -- Applique aussi le skip/leave en mode manuel
+    end
+})
+
+-- 3. Boucle Auto Case
+CaseTab:AddToggle({
+    Name = "Auto Case",
+    Default = false,
+    Callback = function(Value)
+        autoCaseEnabled = Value
+        
+        if autoCaseEnabled then
+            task.spawn(function()
+                local openedCount = 0
+                
+                while autoCaseEnabled do
+                    task.wait(0.3) -- Délai de stabilité entre les cycles d'UI
+                    
+                    if not selectedCrate then continue end
+                    
+                    local crateFrame = cratesFolder:FindFirstChild(selectedCrate)
+                    if not crateFrame then continue end
+                    
+                    -- Lecture du stock possédé
+                    local ownedLabel = crateFrame.Button:FindFirstChild("Owned")
+                    local ownedAmount = ownedLabel and parseCash(ownedLabel.Text) or 0
+                    
+                    if ownedAmount > 0 then
+                        -- Action d'ouverture
+                        secureClick(globalOpenButton)
+                        handleSkipAndLeave() -- Déclenche la fermeture ultra rapide de l'animation
+                        
+                        openedCount = openedCount + 1
+                        if casesToOpen > 0 and openedCount >= casesToOpen then
+                            autoCaseEnabled = false
+                            break
+                        end
+                        
+                        -- On ajoute une pause supplémentaire pour laisser le script fermer l'aperçu avant la prochaine boucle
+                        task.wait(0.6)
+                    else
+                        -- Action d'achat
+                        local priceLabel = crateFrame:FindFirstChild("Cash") and crateFrame.Cash:FindFirstChild("TextLabel")
+                        if not priceLabel then continue end
+                        
+                        local price = parseCash(priceLabel.Text)
+                        local currentMoney = parseCash(cashTextLabel.Text)
+                        
+                        if currentMoney < price then
+                            autoCaseEnabled = false
+                            OrionLib:MakeNotification({
+                                Name = "Fonds insuffisants",
+                                Content = "Plus assez d'argent !",
+                                Time = 5
+                            })
+                            break
+                        end
+                        
+                        secureClick(globalBuyButton)
+                    end
+                end
+            end)
+        end
+    end
+})
 
 ------------------------------------------------------------
 -- ONGLET GIVE
