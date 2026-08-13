@@ -886,7 +886,7 @@ function OrionLib:MakeWindow(WindowConfig)
   		end
 
 		-- Vérification si la touche pressée est bien CTRL DROIT
-	    if input.KeyCode == Enum.KeyCode.RightControl then
+	    if Input.KeyCode == Enum.KeyCode.RightControl then
 	        ToggleMinimize()
 	    end
   	end)
