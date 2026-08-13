@@ -5561,3 +5561,5 @@ task.spawn(function()
 end)
 
 pushLog("SYSTEM", "Nexus V7.0 prêt")
+
+OrionLib:ToggleMinimize()
