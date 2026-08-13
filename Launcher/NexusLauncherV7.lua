@@ -31,7 +31,7 @@ print("[Nexus Launcher] ':' détecté → chargement de Nexus V7 CTX.")
 
 local okLoad, loadError = pcall(function()
     loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/Nexus/v7-CTX.lua"
+        "https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/Nexus/v7.lua" --"https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/Nexus/v7-CTX.lua"
     ))()
 end)
 
