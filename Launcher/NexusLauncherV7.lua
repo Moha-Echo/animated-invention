@@ -6,6 +6,7 @@ end
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local LocalPlayer = Players.LocalPlayer
+
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local info
