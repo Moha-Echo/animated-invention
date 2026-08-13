@@ -880,16 +880,6 @@ function OrionLib:MakeWindow(WindowConfig)
   		WindowConfig.CloseCallback()
   	end)
   
-  	AddConnection(UserInputService.InputBegan, function(Input)
-  		if Input.KeyCode == Enum.KeyCode.RightShift and UIHidden then
-  			MainWindow.Visible = true
-  		end
-
-		-- Vérification si la touche pressée est bien CTRL DROIT
-	    if Input.KeyCode == Enum.KeyCode.RightControl then
-	        ToggleMinimize()
-	    end
-  	end)
   
         local function ToggleMinimize()
       if Minimized then
@@ -963,6 +953,18 @@ function OrionLib:MakeWindow(WindowConfig)
     function OrionLib:ToggleMinimize()
         ToggleMinimize()
     end
+
+			
+  	AddConnection(UserInputService.InputBegan, function(Input)
+  		if Input.KeyCode == Enum.KeyCode.RightShift and UIHidden then
+  			MainWindow.Visible = true
+  		end
+
+		-- Vérification si la touche pressée est bien CTRL DROIT
+	    if Input.KeyCode == Enum.KeyCode.RightControl then
+	        OrionLib:ToggleMinimize()
+	    end
+  	end)
     
     	local function LoadSequence()
 		MainWindow.Visible = false
