@@ -884,6 +884,11 @@ function OrionLib:MakeWindow(WindowConfig)
   		if Input.KeyCode == Enum.KeyCode.RightShift and UIHidden then
   			MainWindow.Visible = true
   		end
+
+		-- Vérification si la touche pressée est bien CTRL DROIT
+	    if input.KeyCode == Enum.KeyCode.RightControl then
+	        ToggleMinimize()
+	    end
   	end)
   
         local function ToggleMinimize()
