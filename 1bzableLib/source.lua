@@ -1032,10 +1032,19 @@ function TabMethods:AddDropdown(config)
             end)
 
             connect(optionButton.Activated, function()
-                -- Le dropdown reste ouvert après la sélection.
+            
                 api:Set(option)
+            
+                -- IMPORTANT :
+                -- on ne ferme PAS le dropdown.
                 popup.Visible = true
-                position()
+            
+                task.defer(function()
+                    if popup.Visible then
+                        position()
+                    end
+                end)
+            
             end)
         end
 
@@ -1081,36 +1090,48 @@ function TabMethods:AddDropdown(config)
         end
     end)
 
-    connect(UserInputService.InputBegan, function(input)
+    connect(UserInputService.InputEnded, function(input)
+
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
             return
         end
-
+    
         if not popup.Visible then
             return
         end
-
-        local mouse = UserInputService:GetMouseLocation()
-
-        local popupPos = popup.AbsolutePosition
-        local popupSize = popup.AbsoluteSize
-        local insidePopup =
-            mouse.X >= popupPos.X and
-            mouse.X <= popupPos.X + popupSize.X and
-            mouse.Y >= popupPos.Y and
-            mouse.Y <= popupPos.Y + popupSize.Y
-
-        local buttonPos = button.AbsolutePosition
-        local buttonSize = button.AbsoluteSize
-        local insideButton =
-            mouse.X >= buttonPos.X and
-            mouse.X <= buttonPos.X + buttonSize.X and
-            mouse.Y >= buttonPos.Y and
-            mouse.Y <= buttonPos.Y + buttonSize.Y
-
-        if not insidePopup and not insideButton then
-            popup.Visible = false
-        end
+    
+        -- Laisse d'abord le bouton/option recevoir son Activated.
+        task.defer(function()
+    
+            if not popup.Visible then
+                return
+            end
+    
+            local mouse = UserInputService:GetMouseLocation()
+    
+            local popupPos = popup.AbsolutePosition
+            local popupSize = popup.AbsoluteSize
+    
+            local insidePopup =
+                mouse.X >= popupPos.X
+                and mouse.X <= popupPos.X + popupSize.X
+                and mouse.Y >= popupPos.Y
+                and mouse.Y <= popupPos.Y + popupSize.Y
+    
+            local buttonPos = button.AbsolutePosition
+            local buttonSize = button.AbsoluteSize
+    
+            local insideButton =
+                mouse.X >= buttonPos.X
+                and mouse.X <= buttonPos.X + buttonSize.X
+                and mouse.Y >= buttonPos.Y
+                and mouse.Y <= buttonPos.Y + buttonSize.Y
+    
+            if not insidePopup and not insideButton then
+                popup.Visible = false
+            end
+    
+        end)
     end)
 
     connect(self.Window.Gui:GetPropertyChangedSignal("AbsolutePosition"), function()
