@@ -50,35 +50,35 @@ local Library = {
             Main = Color3.fromRGB(18, 18, 23),
             Second = Color3.fromRGB(27, 27, 33),
             Accent = Color3.fromRGB(83, 133, 255),
-            BackgroundTransparency = 0.50,
+            BackgroundTransparency = 0,
             BlurPercent = 0,
         },
         Midnight = {
             Main = Color3.fromRGB(25, 20, 40),
             Second = Color3.fromRGB(35, 28, 54),
             Accent = Color3.fromRGB(125, 95, 255),
-            BackgroundTransparency = 0.50,
+            BackgroundTransparency = 0,
             BlurPercent = 0,
         },
         Emerald = {
             Main = Color3.fromRGB(18, 30, 24),
             Second = Color3.fromRGB(28, 45, 35),
             Accent = Color3.fromRGB(65, 205, 135),
-            BackgroundTransparency = 0.50,
+            BackgroundTransparency = 0,
             BlurPercent = 0,
         },
         Ocean = {
             Main = Color3.fromRGB(16, 27, 38),
             Second = Color3.fromRGB(25, 42, 58),
             Accent = Color3.fromRGB(75, 155, 255),
-            BackgroundTransparency = 0.50,
+            BackgroundTransparency = 0,
             BlurPercent = 0,
         },
         Crimson = {
             Main = Color3.fromRGB(35, 19, 24),
             Second = Color3.fromRGB(50, 27, 34),
             Accent = Color3.fromRGB(235, 85, 105),
-            BackgroundTransparency = 0.50,
+            BackgroundTransparency = 0,
             BlurPercent = 0,
         },
     },
@@ -98,8 +98,8 @@ local Library = {
 
     Settings = {
         BlurEnabled = false,
-        BlurSize = 8,
-        BackgroundTransparency = 0.5,
+        BlurSize = 0,
+        BackgroundTransparency = 0,
         FadeTime = 0.20,
         SliderTweenTime = 0.08,
         DropdownMaxHeight = 230,
@@ -805,7 +805,7 @@ function TabMethods:AddSlider(config)
             ):Play()
         end
 
-        valueBox.Text = tostring(value) .. tostring(config.ValueName or "")
+        valueBox.Text = tostring(value) -- .. tostring(config.ValueName or "")
     end
 
     local function setValue(newValue, fire)
@@ -1032,8 +1032,10 @@ function TabMethods:AddDropdown(config)
             end)
 
             connect(optionButton.Activated, function()
+                -- Le dropdown reste ouvert après la sélection.
                 api:Set(option)
-                popup.Visible = false
+                popup.Visible = true
+                position()
             end)
         end
 
@@ -1329,7 +1331,7 @@ function Library:MakeWindow(config)
 
     local top = new("Frame", {
         BackgroundColor3 = Library.Theme.Second,
-        BackgroundTransparency = 0.06,
+        BackgroundTransparency = Library.Settings.BackgroundTransparency,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 48),
         Parent = main,
@@ -1378,7 +1380,7 @@ function Library:MakeWindow(config)
 
     local sidebar = new("Frame", {
         BackgroundColor3 = Library.Theme.Second,
-        BackgroundTransparency = 0.08,
+        BackgroundTransparency = Library.Settings.BackgroundTransparency,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 48),
         Size = UDim2.new(0, 165, 1, -48),
@@ -1420,7 +1422,7 @@ function Library:MakeWindow(config)
     -- Bottom-left LocalPlayer card.
     local playerCard = new("Frame", {
         BackgroundColor3 = Library.Theme.Main,
-        BackgroundTransparency = 0.15,
+        BackgroundTransparency = Library.Settings.BackgroundTransparency,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 8, 1, -67),
         Size = UDim2.new(1, -16, 0, 54),
@@ -1479,6 +1481,7 @@ function Library:MakeWindow(config)
         Sidebar = sidebar,
         TabList = tabList,
         ContentHolder = contentHolder,
+        PlayerCard = playerCard,
         Tabs = {},
         Dropdowns = {},
         PopupHost = nil,
@@ -1737,6 +1740,15 @@ function Library:SetBackgroundTransparency(value)
     for _, window in ipairs(self.Windows) do
         if window.Main and window.Main.Parent then
             window.Main.BackgroundTransparency = self.Settings.BackgroundTransparency
+        end
+        if window.Top and window.Top.Parent then
+            window.Top.BackgroundTransparency = self.Settings.BackgroundTransparency
+        end
+        if window.Sidebar and window.Sidebar.Parent then
+            window.Sidebar.BackgroundTransparency = self.Settings.BackgroundTransparency
+        end
+        if window.PlayerCard and window.PlayerCard.Parent then
+            window.PlayerCard.BackgroundTransparency = self.Settings.BackgroundTransparency
         end
     end
 end
