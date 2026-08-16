@@ -238,7 +238,8 @@ CTX.Skin = {
     Intensity = 1,
     Knife = "SkeletonV2",
     Skin = "HologramSkeleton",
-    VFX = "Flame",
+    Texture = "HologramSkeleton",
+    VFX = "Divine",
 
     OriginalViewModelName = nil,
     OriginalBackup = nil,
@@ -264,11 +265,20 @@ local knifeThrowModels = assets:WaitForChild("KnifeThrowModels")
 -- FONCTION : TROUVER LE VIEWMODEL DYNAMIQUEMENT
 -- ==========================================
 local function trouverViewModelActuel()
-    for _, child in pairs(Camera:GetChildren()) do
-        if child:IsA("Model") and child:FindFirstChild("Knife") then
+    Camera = workspace.CurrentCamera or Camera
+
+    if not Camera then
+        return nil
+    end
+
+    for _, child in ipairs(Camera:GetChildren()) do
+        if child:IsA("Model")
+            and child:FindFirstChild("Knife")
+        then
             return child
         end
     end
+
     return nil
 end
 -- ==========================================
@@ -369,6 +379,11 @@ local function appliquerEffetsEtTrails(mainMesh, sourceVFX, conteneurParent, est
 end
 
 
+local function getSelectedSkinTexture()
+    return CTX.Skin.Texture
+        or CTX.Skin.Skin
+        or "HologramSkeleton"
+end
 -- ==========================================
 -- FONCTION REVISÉE : TOTALEMENT INDÉPENDANTE POUR LES TOGGLES
 -- ==========================================
@@ -458,7 +473,10 @@ local function actualiserViewmodel()
     if mainMesh then
         -- Gestion indépendante du SKIN
         if CTX.Skin.EnabledSkin then
-            local sourceTexture = knifeTextures:FindFirstChild(CTX.Skin.Texture)
+            local sourceTexture =
+                knifeTextures:FindFirstChild(
+                    getSelectedSkinTexture()
+                )
             if sourceTexture then
                 for _, obj in pairs(mainMesh:GetChildren()) do
                     if obj:IsA("SurfaceAppearance") or obj:IsA("Texture") then obj:Destroy() end
@@ -631,7 +649,7 @@ local function injecterCouteauLance(thrownKnife)
     if CTX.Skin.EnabledSkin then
         local sourceTexture =
             knifeTextures:FindFirstChild(
-                CTX.Skin.Texture
+                getSelectedSkinTexture()
             )
 
         if sourceTexture then
@@ -1223,6 +1241,12 @@ CTX.Window = OrionLib:MakeWindow({
     SaveConfig = false,
 })
 
+print(
+    "[rio DEBUG] Window =",
+    typeof(CTX.Window),
+    "ToggleMinimize =",
+    CTX.Window and typeof(CTX.Window.ToggleMinimize) or "nil"
+)
 ------------------------------------------------------------
 -- ONGLET VFX
 -- ==========================================
@@ -5788,7 +5812,17 @@ end)
 pushLog("SYSTEM", "rio v7.2 prêt")
 
 if Lib == "1bzableLib" then
-    CTX.Window:ToggleMinimize()
+    if CTX.Window
+        and typeof(CTX.Window.ToggleMinimize) == "function"
+    then
+        CTX.Window:ToggleMinimize()
+    else
+        warn("[rio DEBUG] 1bzableLib: ToggleMinimize absent")
+    end
 else
-    OrionLib:ToggleMinimize()
+    if OrionLib
+        and typeof(OrionLib.ToggleMinimize) == "function"
+    then
+        OrionLib:ToggleMinimize()
+    end
 end
