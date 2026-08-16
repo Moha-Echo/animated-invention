@@ -40,6 +40,43 @@ local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 
+--========================================================--
+-- CLEANUP GLOBAL 1bzableLib
+--========================================================--
+
+local oldLibrary = rawget(_G, "_1bzableLibRuntime")
+
+if oldLibrary and oldLibrary.Destroy then
+    pcall(function()
+        oldLibrary:Destroy()
+    end)
+end
+
+local function destroyExistingGui()
+    local parents = {CoreGui}
+
+    pcall(function()
+        if gethui then
+            local hui = gethui()
+            if hui and hui ~= CoreGui then
+                table.insert(parents, hui)
+            end
+        end
+    end)
+
+    for _, parent in ipairs(parents) do
+        local oldGui = parent:FindFirstChild("1bzableLib")
+
+        if oldGui then
+            pcall(function()
+                oldGui:Destroy()
+            end)
+        end
+    end
+end
+
+destroyExistingGui()
+
 local Library = {
     Windows = {},
     Connections = {},
@@ -106,6 +143,8 @@ local Library = {
         DropdownRowHeight = 34,
     },
 }
+
+_G._1bzableLibRuntime = Library
 
 local WindowMethods = {}
 WindowMethods.__index = WindowMethods
@@ -1324,12 +1363,7 @@ end
 function Library:MakeWindow(config)
     config = config or {}
 
-    local old = CoreGui:FindFirstChild("1bzableLib")
-    if old then
-        pcall(function()
-            old:Destroy()
-        end)
-    end
+    destroyExistingGui()
 
     local gui = new("ScreenGui", {
         Name = "1bzableLib",
