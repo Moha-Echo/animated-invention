@@ -1428,6 +1428,23 @@ local function updateProfileMode(window)
     profile.AnchorPoint = Vector2.new(0.5, 0)
 end
 
+
+local function v3Corner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
+    corner.Parent = parent
+    return corner
+end
+
+local function v3Stroke(parent, color, transparency, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or GlassLib.Theme.Border
+    stroke.Transparency = transparency == nil and 0.88 or transparency
+    stroke.Thickness = thickness or 1
+    stroke.Parent = parent
+    return stroke
+end
+
 local function setupUltraMiniIcon(window)
     if window.UltraMiniIcon then
         safeDestroy(window.UltraMiniIcon)
@@ -1628,6 +1645,7 @@ local function applyMinimizeModeVisual(window, instant)
         end)
     end
 end
+
 
 function GlassLib:MakeWindow(config)
     config = config or {}
