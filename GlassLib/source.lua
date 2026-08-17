@@ -388,35 +388,41 @@ function GlassLib:AddButton(tab, config)
     }
 end
 
+-- =============================================================================
+-- GLASSLIB EXTENSION : COMPOSANTS INTERACTIFS AVANCÉS (TOGGLE & SLIDER AVEC FLAGS)
+-- =============================================================================
+
 function GlassLib:AddToggle(tab, config)
     config = config or {}
     local base = createBaseElement(tab.Page, 35)
     local value = config.Default == true
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Size = UDim2.new(1, -70, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.Text = config.Name or "Toggle"
     label.Font = THEME.Font
     label.TextColor3 = THEME.Text
-    label.TextSize = 14
+    label.TextSize = 13
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = base
 
     local switch = Instance.new("Frame")
-    switch.Size = UDim2.new(0, 40, 0, 20)
-    switch.Position = UDim2.new(1, -50, 0.5, -10)
+    switch.Size = UDim2.new(0, 38, 0, 22)
+    switch.Position = UDim2.new(1, -50, 0.5, -11)
     switch.BackgroundColor3 = value and (config.Color or THEME.Accent) or Color3.fromRGB(80, 80, 80)
+    switch.BorderSizePixel = 0
     switch.Parent = base
-    Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", switch).CornerRadius = UDim.new(0, 11)
 
     local knob = Instance.new("Frame")
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Position = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.Size = UDim2.new(0, 18, 0, 18)
+    knob.Position = value and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
+    knob.BackgroundColor3 = Color3.fromRGB(246, 246, 248)
+    knob.BorderSizePixel = 0
     knob.Parent = switch
-    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(0, 9)
 
     local click = Instance.new("TextButton")
     click.Size = UDim2.new(1, 0, 1, 0)
@@ -432,14 +438,14 @@ function GlassLib:AddToggle(tab, config)
 
     local function render(instant)
         local targetColor = value and (config.Color or THEME.Accent) or Color3.fromRGB(80, 80, 80)
-        local targetPosition = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        local targetPosition = value and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
 
         if instant then
             switch.BackgroundColor3 = targetColor
             knob.Position = targetPosition
         else
-            tween(knob, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {Position = targetPosition})
             tween(switch, TweenInfo.new(0.12), {BackgroundColor3 = targetColor})
+            tween(knob, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {Position = targetPosition})
         end
     end
 
@@ -459,13 +465,15 @@ function GlassLib:AddToggle(tab, config)
     end
 
     render(true)
+    if config.Callback then config.Callback(value) end
+
     return api
 end
 
 function GlassLib:AddSlider(tab, config)
     config = config or {}
-    local base = createBaseElement(tab.Page, 65) -- Taille ajustée pour la barre en dessous
-    
+    local base = createBaseElement(tab.Page, 72)
+
     local minValue = tonumber(config.Min) or 0
     local maxValue = tonumber(config.Max) or 100
     local increment = tonumber(config.Increment) or 1
@@ -474,15 +482,21 @@ function GlassLib:AddSlider(tab, config)
         minValue, maxValue = maxValue, minValue
     end
 
-    local value = math.clamp(tonumber(config.Default) or minValue, minValue, maxValue)
+    -- Fonction interne d'arrondi mathématique (snap) conforme à votre code source
+    local function snapValue(val, min, max, inc)
+        local snapped = math.floor((val - min) / inc + 0.5) * inc + min
+        return math.clamp(snapped, min, max)
+    end
+
+    local value = snapValue(tonumber(config.Default) or minValue, minValue, maxValue, increment)
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.55, 0, 0, 20)
-    label.Position = UDim2.new(0, 10, 0, 6)
+    label.Position = UDim2.new(0, 12, 0, 7)
     label.Text = config.Name or "Slider"
     label.Font = THEME.Font
     label.TextColor3 = THEME.Text
-    label.TextSize = 14
+    label.TextSize = 13
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = base
@@ -491,9 +505,9 @@ function GlassLib:AddSlider(tab, config)
     valueBox.Size = UDim2.new(0, 98, 0, 24)
     valueBox.Position = UDim2.new(1, -112, 0, 6)
     valueBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    valueBox.Text = tostring(value)
-    valueBox.Font = THEME.Font
+    valueBox.BorderSizePixel = 0
     valueBox.TextColor3 = THEME.Text
+    valueBox.Font = THEME.Font
     valueBox.TextSize = 11
     valueBox.TextXAlignment = Enum.TextXAlignment.Right
     valueBox.ClearTextOnFocus = false
@@ -512,75 +526,127 @@ function GlassLib:AddSlider(tab, config)
     hintLabel.Parent = base
 
     local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(1, -24, 0, 6)
-    bar.Position = UDim2.new(0, 10, 0, 48)
+    bar.Size = UDim2.new(1, -24, 0, 9)
+    bar.Position = UDim2.new(0, 12, 0, 48)
     bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    bar.BorderSizePixel = 0
     bar.Parent = base
     Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 5)
 
     local fill = Instance.new("Frame")
-    local initialPct = (value - minValue) / (maxValue - minValue)
-    fill.Size = UDim2.new(initialPct, 0, 1, 0)
+    fill.Size = UDim2.new(0, 0, 1, 0)
     fill.BackgroundColor3 = config.Color or THEME.Accent
+    fill.BorderSizePixel = 0
     fill.Parent = bar
     Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 5)
 
-    local active = false
-    local function update(input)
-        local xOffset = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
-        local ratio = xOffset / bar.AbsoluteSize.X
-        local rawVal = minValue + (maxValue - minValue) * ratio
-        
-        -- Logique de snap/incrémentation
-        value = math.floor(rawVal / increment + 0.5) * increment
-        value = math.clamp(value, minValue, maxValue)
-        
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.AnchorPoint = Vector2.new(0.5, 0.5)
+    knob.BackgroundColor3 = Color3.fromRGB(245, 245, 248)
+    knob.BorderSizePixel = 0
+    knob.Parent = bar
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(0, 7)
+
+    local hit = Instance.new("TextButton")
+    hit.Size = UDim2.new(1, 0, 1, 0)
+    hit.BackgroundTransparency = 1
+    hit.Text = ""
+    hit.Parent = bar
+
+    local api = {
+        Value = value,
+        Type = "Slider",
+        Instance = base
+    }
+
+    local dragging = false
+    local lastClick = 0
+
+    local function render(instant)
+        local alpha = maxValue == minValue and 0 or math.clamp((value - minValue) / (maxValue - minValue), 0, 1)
+        local fillTarget = UDim2.new(alpha, 0, 1, 0)
+        local knobTarget = UDim2.new(alpha, 0, 0.5, 0)
+
+        if instant then
+            fill.Size = fillTarget
+            knob.Position = knobTarget
+        else
+            tween(fill, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = fillTarget})
+            tween(knob, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = knobTarget})
+        end
+
         valueBox.Text = tostring(value)
-        fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
-        if config.Callback then config.Callback(value) end
     end
 
-    base.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
-            active = true 
-            update(input) 
-        end
-    end)
+    local function setValue(newValue, fire)
+        value = snapValue(newValue, minValue, maxValue, increment)
+        api.Value = value
+        render(false)
 
-    base.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
-            active = false 
+        if fire and config.Callback then
+            config.Callback(value)
+        end
+    end
+
+    local function setFromMouse(x)
+        local alpha = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
+        setValue(minValue + (maxValue - minValue) * alpha, true)
+    end
+
+    function api:Set(newValue)
+        setValue(tonumber(newValue) or minValue, true)
+    end
+
+    hit.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            setFromMouse(input.Position.X)
         end
     end)
 
     game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if active and input.UserInputType == Enum.UserInputType.MouseMovement then 
-            update(input) 
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            setFromMouse(input.Position.X)
         end
     end)
 
-    valueBox.FocusLost:Connect(function()
-        local num = tonumber(valueBox.Text)
-        if num then
-            value = math.clamp(math.floor(num / increment + 0.5) * increment, minValue, maxValue)
-            valueBox.Text = tostring(value)
-            fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
-            if config.Callback then config.Callback(value) end
-                else
-                valueBox.Text = tostring(value)
-                end
-            end)
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 
-    return {
-        Set = function(_, newValue)
-            value = math.clamp(newValue, minValue, maxValue)
-            valueBox.Text = tostring(value)
-            fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
-            if config.Callback then config.Callback(value) end
-            end,
-        Instance = base
-    }
+    valueBox.InputBegan:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+
+        local now = os.clock()
+        if now - lastClick <= 0.30 then
+            valueBox:CaptureFocus()
+            valueBox.CursorPosition = #valueBox.Text + 1
+        end
+        lastClick = now
+    end)
+
+    valueBox.FocusLost:Connect(function()
+        local numeric = tonumber(valueBox.Text)
+        if numeric then
+            setValue(numeric, true)
+        else
+            render(true)
+        end
+    end)
+
+    if config.Flag and GlassLib.Flags then
+        GlassLib.Flags[config.Flag] = api
+    end
+
+    render(true)
+    if config.Callback then config.Callback(value) end
+
+    return api
 end
+
 
 -- =============================================================================
 -- GLASSLIB EXTENSION : DROPDOWN & TEXTBOX AVEC LOGIQUE DE POPUP ET AUTO-CLOSE
