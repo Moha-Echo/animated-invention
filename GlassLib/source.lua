@@ -1255,48 +1255,38 @@ local function applyLegacyTheme()
     THEME.TextDim = GlassLib.Theme.TextDim
 end
 
+-- ====================================================================
+-- 1. LA FONCTION REFRESH CORRIGÉE
+-- ====================================================================
 local function refreshLiquidIndicator(window, instant)
-    if not window
-        or not window.CurrentTab
-        or not window.LiquidIndicator
-        or not window.TabScroll
-    then
+    if not window or not window.CurrentTab or not window.LiquidIndicator or not window.TabScroll then
         return
     end
 
     local button = window.CurrentTab.Button
-
     if not button or not button.Parent then
         return
     end
 
-    local x =
-        button.AbsolutePosition.X
-        - window.TabBar.AbsolutePosition.X
-        + window.TabScroll.CanvasPosition.X
+    -- Position relative par rapport à la barre principale (sans recalculer le CanvasPosition manuellement)
+    local targetX = button.AbsolutePosition.X - window.TabBar.AbsolutePosition.X
 
-    -- The indicator is a sibling of the ScrollingFrame,
-    -- so it follows the button while the tab list scrolls.
-    local targetPosition =
-        UDim2.fromOffset(x, 3)
-
-    local targetSize =
-        UDim2.fromOffset(
-            button.AbsoluteSize.X,
-            GlassLib.Settings.LiquidHeight
-        )
+    local targetPosition = UDim2.fromOffset(targetX, 3)
+    local targetSize = UDim2.fromOffset(button.AbsoluteSize.X, GlassLib.Settings.LiquidHeight)
 
     if instant then
         window.LiquidIndicator.Position = targetPosition
         window.LiquidIndicator.Size = targetSize
     else
+        -- Correction de la direction en Enum.EasingDirection.Out pour l'effet fluide "Apple"
         animate(
             window.LiquidIndicator,
-            GlassLib.Settings.AnimationTime + 0.10,
+            GlassLib.Settings.AnimationTime,
             {
                 Position = targetPosition,
                 Size = targetSize,
-            }
+            },
+            Enum.EasingDirection.Out -- Ajouté ici pour écraser le InOut trop lourd
         )
     end
 end
@@ -1756,6 +1746,7 @@ function GlassLib:MakeWindow(config)
     window.ScreenGui = gui
     window.Gui = gui
 
+    --[[
     local shadow = Instance.new("Frame")
     shadow.Name = "GlassShadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1768,6 +1759,25 @@ function GlassLib:MakeWindow(config)
     shadow.Parent = gui
     uiCorner(shadow, 24)
     window.Shadow = shadow
+]]--
+    local shadow = Instance.new("ImageLabel") -- Changé en ImageLabel
+    shadow.Name = "GlassShadow"
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Size = V6.ShadowSize
+    shadow.Position = UDim2.fromScale(0.5, 0.5)
+    shadow.BackgroundTransparency = 1 -- Fond invisible pour ne voir que l'image
+    
+    -- Propriétés de la texture de l'ombre
+    shadow.Image = "rbxassetid://1316045217" -- ID d'une ombre douce standard
+    shadow.ImageColor3 = Color3.new(0, 0, 0)
+    shadow.ImageTransparency = 0.5 -- Ajuste l'opacité ici (0 = opaque, 1 = invisible)
+    shadow.ScaleType = Enum.ScaleType.Slice -- Permet d'étirer l'ombre sans la déformer
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118) -- Zone centrale à ne pas déformer
+    
+    shadow.ZIndex = 0
+    shadow.Parent = gui
+    window.Shadow = shadow
+
 
     local main = Instance.new("Frame")
     main.Name = "MainFrame"
@@ -1966,6 +1976,10 @@ function GlassLib:MakeWindow(config)
     layout.Padding = UDim.new(0, 4)
     layout.Parent = tabScroll
     window.TabLayout = layout
+-- ====================================================================
+-- 2. TON EXTRAIT DE MAKEWINDOW (Avec la connexion ajoutée en bas)
+-- ====================================================================
+-- [Vos lignes de création de tabBar, tabScroll, padding, layout restent identiques...]
 
     -- Indicator is OUTSIDE the scrolling list, so it is never a fake tab.
     local liquid = Instance.new("Frame")
@@ -1980,6 +1994,13 @@ function GlassLib:MakeWindow(config)
     uiCorner(liquid, 14)
     uiStroke(liquid, GlassLib.Theme.Border, 0.78, 1)
     window.LiquidIndicator = liquid
+
+    -- <<< AJOUT ICI : CONNEXION POUR METTRE À JOUR LA BULLE PENDANT LE SCROLL >>>
+    tabScroll:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+        -- On passe "true" pour forcer une mise à jour instantanée sans Tween,
+        -- sinon la bulle aurait du retard sur le mouvement du doigt/de la souris.
+        refreshLiquidIndicator(window, true)
+    end)
 
     local content = Instance.new("Frame")
     content.Name = "Container"
