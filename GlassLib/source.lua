@@ -1759,7 +1759,7 @@ function GlassLib:MakeWindow(config)
     shadow.Parent = gui
     uiCorner(shadow, 24)
     window.Shadow = shadow
-]]--
+
     local shadow = Instance.new("ImageLabel") -- Changé en ImageLabel
     shadow.Name = "GlassShadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1773,6 +1773,31 @@ function GlassLib:MakeWindow(config)
     shadow.ImageTransparency = 0.5 -- Ajuste l'opacité ici (0 = opaque, 1 = invisible)
     shadow.ScaleType = Enum.ScaleType.Slice -- Permet d'étirer l'ombre sans la déformer
     shadow.SliceCenter = Rect.new(10, 10, 118, 118) -- Zone centrale à ne pas déformer
+    
+    shadow.ZIndex = 0
+    shadow.Parent = gui
+    window.Shadow = shadow
+]]--
+
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "GlassShadow"
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    
+    -- CORRECTION : On agrandit un peu l'ombre pour que le flou dépasse proprement tout autour
+    -- Si V6.ShadowSize est déjà plus grand que ta fenêtre, tu peux laisser : shadow.Size = V6.ShadowSize
+    shadow.Size = V6.ShadowSize + UDim2.fromOffset(40, 40) 
+    
+    shadow.Position = UDim2.fromScale(0.5, 0.5)
+    shadow.BackgroundTransparency = 1
+    
+    -- NOUVEL ID : Ombre moderne, douce et sans glitchs visuels
+    shadow.Image = "rbxassetid://5554236805" 
+    shadow.ImageColor3 = Color3.new(0, 0, 0)
+    shadow.ImageTransparency = 0.55 -- Augmente (ex: 0.7) si tu la trouves encore trop sombre
+    
+    -- SliceCenter calibré au pixel près pour cette texture spécifique
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(15, 15, 285, 285)
     
     shadow.ZIndex = 0
     shadow.Parent = gui
