@@ -9,11 +9,19 @@ local TextService = game:GetService("TextService")
 local CoreGui = game:GetService("CoreGui")
 
 
+local oldGlassRuntime = rawget(_G, "_GlassLibRuntime")
+if oldGlassRuntime and type(oldGlassRuntime.Destroy) == "function" then
+    pcall(function()
+        oldGlassRuntime:Destroy()
+    end)
+end
+
 local GlassLib = {}
 GlassLib.__index = GlassLib
 GlassLib.Flags = {}
 GlassLib.Windows = {}
 GlassLib.Connections = {}
+_G._GlassLibRuntime = GlassLib
 GlassLib.UIProfiles = {
     Default = {
         Background = Color3.fromRGB(13, 15, 20),
@@ -666,13 +674,13 @@ function GlassLib:AddSlider(tab, config)
         end
     end)
 
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    safeConnect(UserInputService.InputChanged, function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             setFromMouse(input.Position.X)
         end
     end)
 
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    safeConnect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
@@ -844,7 +852,7 @@ function GlassLib:AddDropdown(tab, config)
     end)
 
     -- Détection de clic extérieur pour fermer automatiquement le menu déroulant
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    safeConnect(UserInputService.InputEnded, function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
         if not open then return end
 
@@ -1171,7 +1179,7 @@ function GlassLib:AddColorpicker(tab, config)
         end
     end)
 
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    safeConnect(UserInputService.InputChanged, function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             local mouse = game:GetService("UserInputService"):GetMouseLocation()
             if draggingSV then
@@ -1182,7 +1190,7 @@ function GlassLib:AddColorpicker(tab, config)
         end
     end)
 
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    safeConnect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             draggingSV = false
             draggingHue = false
@@ -1217,6 +1225,7 @@ end
 local V6 = {
     NormalSize = UDim2.fromOffset(600, 440),
     ShadowSize = UDim2.fromOffset(630, 470),
+    NormalTopHeight = 56,
 
     Minimize = {
         Default = {
@@ -1429,20 +1438,78 @@ local function updateProfileMode(window)
 end
 
 
-local function v3Corner(parent, radius)
+local function uiCorner(parent, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 8)
     corner.Parent = parent
     return corner
 end
 
-local function v3Stroke(parent, color, transparency, thickness)
+local function uiStroke(parent, color, transparency, thickness)
     local stroke = Instance.new("UIStroke")
     stroke.Color = color or GlassLib.Theme.Border
     stroke.Transparency = transparency == nil and 0.88 or transparency
     stroke.Thickness = thickness or 1
     stroke.Parent = parent
     return stroke
+end
+
+local function createProfileCard(window, parent)
+    local profile = Instance.new("Frame")
+    profile.Name = "Profile"
+    profile.AnchorPoint = Vector2.new(0.5, 0)
+    profile.Position = UDim2.new(0.5, 0, 0, 6)
+    profile.Size = UDim2.fromOffset(166, 42)
+    profile.BackgroundColor3 = GlassLib.Theme.Secondary
+    profile.BackgroundTransparency = 0.28
+    profile.BorderSizePixel = 0
+    profile.ZIndex = 11
+    profile.Parent = parent
+
+    uiCorner(profile, 12)
+    uiStroke(profile, GlassLib.Theme.Border, 0.86, 1)
+
+    local avatar = Instance.new("ImageLabel")
+    avatar.Name = "Avatar"
+    avatar.BackgroundTransparency = 1
+    avatar.Position = UDim2.fromOffset(5, 5)
+    avatar.Size = UDim2.fromOffset(32, 32)
+    avatar.Image = "rbxthumb://type=AvatarHeadShot&id="
+        .. tostring(LocalPlayer.UserId)
+        .. "&w=150&h=150"
+    avatar.ZIndex = 12
+    avatar.Parent = profile
+    uiCorner(avatar, 16)
+
+    local display = Instance.new("TextLabel")
+    display.Name = "DisplayName"
+    display.BackgroundTransparency = 1
+    display.Position = UDim2.fromOffset(43, 5)
+    display.Size = UDim2.new(1, -48, 0, 16)
+    display.Text = LocalPlayer.DisplayName or LocalPlayer.Name
+    display.TextColor3 = GlassLib.Theme.Text
+    display.Font = Enum.Font.GothamBold
+    display.TextSize = 10
+    display.TextXAlignment = Enum.TextXAlignment.Left
+    display.TextTruncate = Enum.TextTruncate.AtEnd
+    display.ZIndex = 12
+    display.Parent = profile
+
+    local username = Instance.new("TextLabel")
+    username.Name = "Username"
+    username.BackgroundTransparency = 1
+    username.Position = UDim2.fromOffset(43, 21)
+    username.Size = UDim2.new(1, -48, 0, 14)
+    username.Text = "@" .. LocalPlayer.Name
+    username.TextColor3 = GlassLib.Theme.TextDim
+    username.Font = Enum.Font.Gotham
+    username.TextSize = 8
+    username.TextXAlignment = Enum.TextXAlignment.Left
+    username.TextTruncate = Enum.TextTruncate.AtEnd
+    username.ZIndex = 12
+    username.Parent = profile
+
+    return profile
 end
 
 local function setupUltraMiniIcon(window)
@@ -1464,8 +1531,8 @@ local function setupUltraMiniIcon(window)
     icon.Visible = false
     icon.Parent = window.MainFrame
 
-    v3Corner(icon, 18)
-    v3Stroke(icon, GlassLib.Theme.Border, 0.72, 1)
+    uiCorner(icon, 18)
+    uiStroke(icon, GlassLib.Theme.Border, 0.72, 1)
 
     local avatar = window.Profile
         and window.Profile:FindFirstChild("Avatar")
@@ -1635,7 +1702,7 @@ local function applyMinimizeModeVisual(window, instant)
             1,
             -20,
             0,
-            V3.NormalTopHeight
+            V6.NormalTopHeight
         )
 
         updateProfileMode(window)
@@ -1699,7 +1766,7 @@ function GlassLib:MakeWindow(config)
     shadow.BorderSizePixel = 0
     shadow.ZIndex = 0
     shadow.Parent = gui
-    v3Corner(shadow, 24)
+    uiCorner(shadow, 24)
     window.Shadow = shadow
 
     local main = Instance.new("Frame")
@@ -1714,8 +1781,8 @@ function GlassLib:MakeWindow(config)
     main.Active = true
     main.ZIndex = 1
     main.Parent = gui
-    v3Corner(main, 20)
-    v3Stroke(main, GlassLib.Theme.Border, 0.86, 1)
+    uiCorner(main, 20)
+    uiStroke(main, GlassLib.Theme.Border, 0.86, 1)
     window.MainFrame = main
 
     local glassLayer = Instance.new("Frame")
@@ -1727,7 +1794,7 @@ function GlassLib:MakeWindow(config)
     glassLayer.BorderSizePixel = 0
     glassLayer.ZIndex = 2
     glassLayer.Parent = main
-    v3Corner(glassLayer, 19)
+    uiCorner(glassLayer, 19)
 
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
@@ -1752,12 +1819,12 @@ function GlassLib:MakeWindow(config)
     topHighlight.BorderSizePixel = 0
     topHighlight.ZIndex = 3
     topHighlight.Parent = main
-    v3Corner(topHighlight, 18)
+    uiCorner(topHighlight, 18)
     window.TopHighlight = topHighlight
 
     local top = Instance.new("Frame")
     top.Name = "TopBar"
-    top.Size = UDim2.new(1, -20, 0, V3.NormalTopHeight)
+    top.Size = UDim2.new(1, -20, 0, V6.NormalTopHeight)
     top.Position = UDim2.fromOffset(10, 7)
     top.BackgroundTransparency = 1
     top.Active = true
@@ -1804,7 +1871,7 @@ function GlassLib:MakeWindow(config)
     subtitle.Parent = top
     window.SubtitleLabel = subtitle
 
-    local profile = v3ProfileCard(window, top)
+    local profile = createProfileCard(window, top)
     window.Profile = profile
     updateProfileMode(window)
 
@@ -1825,8 +1892,8 @@ function GlassLib:MakeWindow(config)
         b.ZIndex = 14
         b.Active = true
         b.Parent = top
-        v3Corner(b, 9)
-        v3Stroke(b, GlassLib.Theme.Border, 0.82, 1)
+        uiCorner(b, 9)
+        uiStroke(b, GlassLib.Theme.Border, 0.82, 1)
 
         b.MouseEnter:Connect(function()
             animate(b, 0.12, {
@@ -1867,8 +1934,8 @@ function GlassLib:MakeWindow(config)
     tabBar.Active = true
     tabBar.ZIndex = 7
     tabBar.Parent = main
-    v3Corner(tabBar, 13)
-    v3Stroke(tabBar, GlassLib.Theme.Border, 0.90, 1)
+    uiCorner(tabBar, 13)
+    uiStroke(tabBar, GlassLib.Theme.Border, 0.90, 1)
     window.TabBar = tabBar
 
     local tabScroll = Instance.new("ScrollingFrame")
@@ -1910,8 +1977,8 @@ function GlassLib:MakeWindow(config)
     liquid.BorderSizePixel = 0
     liquid.ZIndex = 8
     liquid.Parent = tabBar
-    v3Corner(liquid, 14)
-    v3Stroke(liquid, GlassLib.Theme.Border, 0.78, 1)
+    uiCorner(liquid, 14)
+    uiStroke(liquid, GlassLib.Theme.Border, 0.78, 1)
     window.LiquidIndicator = liquid
 
     local content = Instance.new("Frame")
@@ -2106,11 +2173,24 @@ function GlassLib:MakeWindow(config)
         end
     end, window.Connections)
 
-    -- Expose Window:MakeTab.
+    -- Expose Window methods. The functions resolve at call time,
+    -- so their GlassLib implementations may be declared later in the file.
     setmetatable(window, {
         __index = {
             MakeTab = function(_, tabConfig)
                 return GlassLib:MakeTab(tabConfig)
+            end,
+            ToggleMinimize = function(_)
+                return GlassLib:ToggleMinimize()
+            end,
+            Minimize = function(_)
+                return GlassLib:Minimize()
+            end,
+            Restore = function(_)
+                return GlassLib:Restore()
+            end,
+            Destroy = function(_)
+                return GlassLib:Destroy()
             end,
         },
     })
@@ -2393,7 +2473,7 @@ function GlassLib:AddColorpicker(tab, config)
     local base = api and api.Instance
 
     if base then
-        v3Stroke(
+        uiStroke(
             base,
             GlassLib.Theme.Border,
             0.91,
@@ -2404,7 +2484,7 @@ function GlassLib:AddColorpicker(tab, config)
         if popup then
             popup.BackgroundColor3 = GlassLib.Theme.Background
             popup.BackgroundTransparency = 0.08
-            v3Corner(popup, 12)
+            uiCorner(popup, 12)
 
             local existingStroke =
                 popup:FindFirstChildOfClass("UIStroke")
@@ -2414,7 +2494,7 @@ function GlassLib:AddColorpicker(tab, config)
                 existingStroke.Transparency = 0.88
                 existingStroke.Thickness = 1
             else
-                v3Stroke(
+                uiStroke(
                     popup,
                     GlassLib.Theme.Border,
                     0.88,
@@ -2496,8 +2576,8 @@ function GlassLib:MakeNotification(config)
     card.BorderSizePixel = 0
     card.Parent = holder
 
-    v3Corner(card, 13)
-    v3Stroke(card, GlassLib.Theme.Border, 0.82, 1)
+    uiCorner(card, 13)
+    uiStroke(card, GlassLib.Theme.Border, 0.82, 1)
 
     local titleLabel = Instance.new("TextLabel")
     titleLabel.BackgroundTransparency = 1
@@ -3030,6 +3110,10 @@ function GlassLib:Destroy()
 
     cleanupExistingGlassGui()
     setBlur(false)
+
+    if rawget(_G, "_GlassLibRuntime") == self then
+        _G._GlassLibRuntime = nil
+    end
 
     for i = #GlassLib.Windows, 1, -1 do
         if GlassLib.Windows[i] == self.Window then
