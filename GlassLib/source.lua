@@ -269,17 +269,32 @@ end
 
 -- Implémentation des composants requis
 
+-- =============================================================================
+-- GLASSLIB INTEGRATION (SUPPORT MÉTHODES AVANCÉES ET CORRECTIF DES ERREURS DE TEXTLABEL)
+-- =============================================================================
+
 function GlassLib:AddSection(tab, config)
+    config = config or {}
+
+    local frame = Instance.new("Frame")
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, 0, 0, 27)
+    frame.Parent = tab.Page
+
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 25)
-    label.Text = string.upper(config.Name or "Section")
-    label.Font = THEME.Font
-    label.TextSize = 11
-    label.TextColor3 = THEME.Accent
-    label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
-    label.Parent = tab.Page
-    return label
+    label.Position = UDim2.new(0, 3, 0, 2)
+    label.Size = UDim2.new(1, -6, 1, -4)
+    label.Text = config.Name or "Section"
+    label.TextColor3 = THEME.Text
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    -- Retourne l'objet onglet pour permettre le chaînage direct sans erreur
+    return tab
 end
 
 function GlassLib:AddLabel(tab, text)
@@ -292,11 +307,22 @@ function GlassLib:AddLabel(tab, text)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = tab.Page
-    return label
+
+    -- Système d'API moderne retourné sans casser l'arborescence UI
+    return {
+        Set = function(_, value)
+            label.Text = tostring(value or "")
+        end,
+        Destroy = function()
+            label:Destroy()
+        end,
+        Instance = label
+    }
 end
 
 function GlassLib:AddParagraph(tab, title, content)
     local base = createBaseElement(tab.Page, 55)
+    
     local titleL = Instance.new("TextLabel")
     titleL.Size = UDim2.new(1, -20, 0, 25)
     titleL.Position = UDim2.new(0, 10, 0, 4)
@@ -318,32 +344,55 @@ function GlassLib:AddParagraph(tab, title, content)
     contentL.TextXAlignment = Enum.TextXAlignment.Left
     contentL.BackgroundTransparency = 1
     contentL.Parent = base
-    return base
+
+    return {
+        Set = function(_, value)
+            contentL.Text = tostring(value or "")
+        end,
+        Instance = base
+    }
 end
 
 function GlassLib:AddButton(tab, config)
+    config = config or {}
     local base = createBaseElement(tab.Page, 35)
+    
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
-    btn.Text = config.Name or "Click Me"
+    btn.Text = config.Name or "Button"
     btn.Font = THEME.Font
     btn.TextColor3 = THEME.Text
     btn.TextSize = 14
     btn.Parent = base
 
+    btn.MouseEnter:Connect(function()
+        tween(btn, TweenInfo.new(0.10), {TextColor3 = THEME.Accent})
+    end)
+
+    btn.MouseLeave:Connect(function()
+        tween(btn, TweenInfo.new(0.10), {TextColor3 = THEME.Text})
+    end)
+
     btn.MouseButton1Click:Connect(function()
-        -- Effet de rebond discret au clic
         base.Size = UDim2.new(1, -12, 0, 33)
         tween(base, TweenInfo.new(0.2, Enum.EasingStyle.Elastic), {Size = UDim2.new(1, -6, 0, 35)})
         if config.Callback then config.Callback() end
     end)
-    return btn
+
+    return {
+        Set = function(_, value)
+            btn.Text = tostring(value or "")
+        end,
+        Instance = base
+    }
 end
 
 function GlassLib:AddToggle(tab, config)
+    config = config or {}
     local base = createBaseElement(tab.Page, 35)
-    local state = config.Default or false
+    local value = config.Default == true
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -60, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
@@ -355,20 +404,19 @@ function GlassLib:AddToggle(tab, config)
     label.BackgroundTransparency = 1
     label.Parent = base
 
-    -- Structure Switch Apple
     local switch = Instance.new("Frame")
     switch.Size = UDim2.new(0, 40, 0, 20)
     switch.Position = UDim2.new(1, -50, 0.5, -10)
-    switch.BackgroundColor3 = state and THEME.Accent or Color3.fromRGB(80, 80, 80)
+    switch.BackgroundColor3 = value and (config.Color or THEME.Accent) or Color3.fromRGB(80, 80, 80)
     switch.Parent = base
     Instance.new("UICorner", switch).CornerRadius = UDim.new(1, 0)
 
-    local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(0, 16, 0, 16)
-    circle.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    circle.Parent = switch
-    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 16, 0, 16)
+    knob.Position = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    knob.Parent = switch
+    Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
 
     local click = Instance.new("TextButton")
     click.Size = UDim2.new(1, 0, 1, 0)
@@ -376,26 +424,61 @@ function GlassLib:AddToggle(tab, config)
     click.Text = ""
     click.Parent = base
 
+    local api = {
+        Value = value,
+        Type = "Toggle",
+        Instance = base
+    }
+
+    local function render(instant)
+        local targetColor = value and (config.Color or THEME.Accent) or Color3.fromRGB(80, 80, 80)
+        local targetPosition = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+
+        if instant then
+            switch.BackgroundColor3 = targetColor
+            knob.Position = targetPosition
+        else
+            tween(knob, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {Position = targetPosition})
+            tween(switch, TweenInfo.new(0.12), {BackgroundColor3 = targetColor})
+        end
+    end
+
+    function api:Set(newValue)
+        value = newValue == true
+        api.Value = value
+        render(false)
+        if config.Callback then config.Callback(value) end
+    end
+
     click.MouseButton1Click:Connect(function()
-        state = not state
-        local targetPos = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        local targetColor = state and THEME.Accent or Color3.fromRGB(80, 80, 80)
-        tween(circle, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Position = targetPos})
-        tween(switch, TweenInfo.new(0.2), {BackgroundColor3 = targetColor})
-        if config.Callback then config.Callback(state) end
+        api:Set(not value)
     end)
-    return base
+
+    if config.Flag and GlassLib.Flags then
+        GlassLib.Flags[config.Flag] = api
+    end
+
+    render(true)
+    return api
 end
 
 function GlassLib:AddSlider(tab, config)
-    local base = createBaseElement(tab.Page, 45)
-    local min = config.Min or 0
-    local max = config.Max or 100
-    local def = config.Default or min
-    local currentVal = def
+    config = config or {}
+    local base = createBaseElement(tab.Page, 65) -- Taille ajustée pour la barre en dessous
+    
+    local minValue = tonumber(config.Min) or 0
+    local maxValue = tonumber(config.Max) or 100
+    local increment = tonumber(config.Increment) or 1
+
+    if minValue > maxValue then
+        minValue, maxValue = maxValue, minValue
+    end
+
+    local value = math.clamp(tonumber(config.Default) or minValue, minValue, maxValue)
+
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -100, 0, 20)
-    label.Position = UDim2.new(0, 10, 0, 4)
+    label.Size = UDim2.new(0.55, 0, 0, 20)
+    label.Position = UDim2.new(0, 10, 0, 6)
     label.Text = config.Name or "Slider"
     label.Font = THEME.Font
     label.TextColor3 = THEME.Text
@@ -404,65 +487,116 @@ function GlassLib:AddSlider(tab, config)
     label.BackgroundTransparency = 1
     label.Parent = base
 
-    local valLabel = Instance.new("TextLabel")
-    valLabel.Size = UDim2.new(0, 80, 0, 20)
-    valLabel.Position = UDim2.new(1, -90, 0, 4)
-    valLabel.Text = tostring(def)
-    valLabel.Font = THEME.Font
-    valLabel.TextColor3 = THEME.Accent
-    valLabel.TextSize = 14
-    valLabel.TextXAlignment = Enum.TextXAlignment.Right
-    valLabel.BackgroundTransparency = 1
-    valLabel.Parent = base
+    local valueBox = Instance.new("TextBox")
+    valueBox.Size = UDim2.new(0, 98, 0, 24)
+    valueBox.Position = UDim2.new(1, -112, 0, 6)
+    valueBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    valueBox.Text = tostring(value)
+    valueBox.Font = THEME.Font
+    valueBox.TextColor3 = THEME.Text
+    valueBox.TextSize = 11
+    valueBox.TextXAlignment = Enum.TextXAlignment.Right
+    valueBox.ClearTextOnFocus = false
+    valueBox.Parent = base
+    Instance.new("UICorner", valueBox).CornerRadius = UDim.new(0, 5)
 
-    local slideBar = Instance.new("Frame")
-    slideBar.Size = UDim2.new(1, -20, 0, 6)
-    slideBar.Position = UDim2.new(0, 10, 0, 30)
-    slideBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    slideBar.Parent = base
-    Instance.new("UICorner", slideBar)
+    local hintLabel = Instance.new("TextLabel")
+    hintLabel.Size = UDim2.new(0, 98, 0, 12)
+    hintLabel.Position = UDim2.new(1, -112, 0, 29)
+    hintLabel.Text = "Double-clic pour saisir"
+    hintLabel.Font = THEME.Font
+    hintLabel.TextColor3 = THEME.TextDim
+    hintLabel.TextSize = 8
+    hintLabel.TextXAlignment = Enum.TextXAlignment.Right
+    hintLabel.BackgroundTransparency = 1
+    hintLabel.Parent = base
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(1, -24, 0, 6)
+    bar.Position = UDim2.new(0, 10, 0, 48)
+    bar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    bar.Parent = base
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 5)
 
     local fill = Instance.new("Frame")
-    local pct = (def - min) / (max - min)
-    fill.Size = UDim2.new(pct, 0, 1, 0)
-    fill.BackgroundColor3 = THEME.Accent
-    fill.Parent = slideBar
-    Instance.new("UICorner", fill)
+    local initialPct = (value - minValue) / (maxValue - minValue)
+    fill.Size = UDim2.new(initialPct, 0, 1, 0)
+    fill.BackgroundColor3 = config.Color or THEME.Accent
+    fill.Parent = bar
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 5)
 
-    -- Logique du drag du curseur
     local active = false
     local function update(input)
-        local xOffset = math.clamp(input.Position.X - slideBar.AbsolutePosition.X, 0, slideBar.AbsoluteSize.X)
-        local ratio = xOffset / slideBar.AbsoluteSize.X
-        local rawVal = min + (max - min) * ratio
-        currentVal = math.floor(rawVal)
-        valLabel.Text = tostring(currentVal)
-        fill.Size = UDim2.new(ratio, 0, 1, 0)
-        if config.Callback then config.Callback(currentVal) end
+        local xOffset = math.clamp(input.Position.X - bar.AbsolutePosition.X, 0, bar.AbsoluteSize.X)
+        local ratio = xOffset / bar.AbsoluteSize.X
+        local rawVal = minValue + (maxValue - minValue) * ratio
+        
+        -- Logique de snap/incrémentation
+        value = math.floor(rawVal / increment + 0.5) * increment
+        value = math.clamp(value, minValue, maxValue)
+        
+        valueBox.Text = tostring(value)
+        fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
+        if config.Callback then config.Callback(value) end
     end
 
     base.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then active = true update(input) end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+            active = true 
+            update(input) 
+        end
     end)
 
     base.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then active = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+            active = false 
+        end
     end)
 
     game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if active and input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end
+        if active and input.UserInputType == Enum.UserInputType.MouseMovement then 
+            update(input) 
+        end
     end)
-    return base
+
+    valueBox.FocusLost:Connect(function()
+        local num = tonumber(valueBox.Text)
+        if num then
+            value = math.clamp(math.floor(num / increment + 0.5) * increment, minValue, maxValue)
+            valueBox.Text = tostring(value)
+            fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
+            if config.Callback then config.Callback(value) end
+                else
+                valueBox.Text = tostring(value)
+                end
+            end)
+
+    return {
+        Set = function(_, newValue)
+            value = math.clamp(newValue, minValue, maxValue)
+            valueBox.Text = tostring(value)
+            fill.Size = UDim2.new((value - minValue) / (maxValue - minValue), 0, 1, 0)
+            if config.Callback then config.Callback(value) end
+            end,
+        Instance = base
+    }
 end
 
+-- =============================================================================
+-- GLASSLIB EXTENSION : DROPDOWN & TEXTBOX AVEC LOGIQUE DE POPUP ET AUTO-CLOSE
+-- =============================================================================
+
 function GlassLib:AddDropdown(tab, config)
+    config = config or {}
     local base = createBaseElement(tab.Page, 35)
-    local open = false
-    local options = config.Options or {}
+    
+    local options = type(config.Options) == "table" and config.Options or {}
+    local value = config.Default or options[1] or "None"
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -40, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
-    label.Text = (config.Name or "Dropdown") .. " : " .. (config.Default or "None")
+    label.Text = (config.Name or "Dropdown") .. " : " .. tostring(value)
     label.Font = THEME.Font
     label.TextColor3 = THEME.Text
     label.TextSize = 14
@@ -488,26 +622,78 @@ function GlassLib:AddDropdown(tab, config)
     optContainer.Parent = base
     Instance.new("UIListLayout", optContainer)
 
-    -- Ajouter les options
-    for _, opt in ipairs(options) do
-        local oBtn = Instance.new("TextButton")
-        oBtn.Size = UDim2.new(1, 0, 0, 25)
-        oBtn.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
-        oBtn.BackgroundTransparency = 0.2
-        oBtn.Text = opt
-        oBtn.Font = THEME.Font
-        oBtn.TextColor3 = THEME.TextDim
-        oBtn.TextSize = 13
-        oBtn.Parent = optContainer
+    local api = {
+        Value = value,
+        Options = options,
+        Type = "Dropdown",
+        Instance = base
+    }
 
-        oBtn.MouseButton1Click:Connect(function()
-            label.Text = (config.Name or "Dropdown") .. " : " .. opt
-            open = false
-            tween(base, TweenInfo.new(0.2), {Size = UDim2.new(1, -6, 0, 35)})
-            tween(optContainer, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)})
-            arrow.Text = "▼"
-            if config.Callback then config.Callback(opt) end
-        end)
+    local open = false
+
+    local function rebuild()
+        for _, child in ipairs(optContainer:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
+
+        for _, option in ipairs(api.Options) do
+            local selected = option == api.Value
+
+            local optionButton = Instance.new("TextButton")
+            optionButton.Size = UDim2.new(1, 0, 0, 25)
+            optionButton.BackgroundColor3 = selected and THEME.Accent or Color3.fromRGB(30, 45, 65)
+            optionButton.BackgroundTransparency = selected and 0.4 or 0.2
+            optionButton.Text = tostring(option)
+            optionButton.Font = selected and Enum.Font.GothamBold or THEME.Font
+            optionButton.TextColor3 = THEME.Text
+            optionButton.TextSize = 13
+            optionButton.Parent = optContainer
+
+            optionButton.MouseEnter:Connect(function()
+                optionButton.BackgroundTransparency = 0.1
+            end)
+
+            optionButton.MouseLeave:Connect(function()
+                optionButton.BackgroundTransparency = option == api.Value and 0.4 or 0.2
+            end)
+
+            optionButton.MouseButton1Click:Connect(function()
+                api:Set(option)
+                
+                -- L'option reste ouverte d'après votre logique source
+                task.defer(function()
+                    if open then
+                        local containerSize = (#api.Options * 25)
+                        base.Size = UDim2.new(1, -6, 0, 35 + containerSize)
+                        optContainer.Size = UDim2.new(1, 0, 0, containerSize)
+                    end
+                end)
+            end)
+        end
+
+        if open then
+            local containerSize = (#api.Options * 25)
+            base.Size = UDim2.new(1, -6, 0, 35 + containerSize)
+            optContainer.Size = UDim2.new(1, 0, 0, containerSize)
+        end
+    end
+
+    function api:Set(newValue)
+        api.Value = newValue
+        label.Text = (config.Name or "Dropdown") .. " : " .. tostring(api.Value or "")
+        rebuild()
+        if config.Callback then config.Callback(api.Value) end
+    end
+
+    function api:Refresh(newOptions, keepValue)
+        api.Options = type(newOptions) == "table" and newOptions or {}
+        if not keepValue or not table.find(api.Options, api.Value) then
+            api.Value = api.Options[1] or "None"
+        end
+        label.Text = (config.Name or "Dropdown") .. " : " .. tostring(api.Value or "")
+        rebuild()
     end
 
     local click = Instance.new("TextButton")
@@ -518,17 +704,57 @@ function GlassLib:AddDropdown(tab, config)
 
     click.MouseButton1Click:Connect(function()
         open = not open
-        local targetSize = open and (35 + (#options * 25)) or 35
-        local containerSize = open and (#options * 25) or 0
+        local targetSize = open and (35 + (#api.Options * 25)) or 35
+        local containerSize = open and (#api.Options * 25) or 0
         arrow.Text = open and "▲" or "▼"
+        
         tween(base, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -6, 0, targetSize)})
         tween(optContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(1, 0, 0, containerSize)})
+        
+        if open then
+            rebuild()
+        end
     end)
-    return base
+
+    -- Détection de clic extérieur pour fermer automatiquement le menu déroulant
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+        if not open then return end
+
+        task.defer(function()
+            if not open then return end
+
+            local mouse = game:GetService("UserInputService"):GetMouseLocation()
+            local basePos = base.AbsolutePosition
+            local baseSize = base.AbsoluteSize
+
+            local inside = mouse.X >= basePos.X 
+                       and mouse.X <= basePos.X + baseSize.X 
+                       and mouse.Y >= basePos.Y 
+                       and mouse.Y <= basePos.Y + baseSize.Y
+
+            if not inside then
+                open = false
+                arrow.Text = "▼"
+                tween(base, TweenInfo.new(0.2), {Size = UDim2.new(1, -6, 0, 35)})
+                tween(optContainer, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)})
+            end
+        end)
+    end)
+
+    rebuild()
+
+    if config.Flag and GlassLib.Flags then
+        GlassLib.Flags[config.Flag] = api
+    end
+
+    return api
 end
 
 function GlassLib:AddTextbox(tab, config)
+    config = config or {}
     local base = createBaseElement(tab.Page, 35)
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0, 150, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
@@ -543,27 +769,54 @@ function GlassLib:AddTextbox(tab, config)
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(1, -170, 0, 24)
     box.Position = UDim2.new(0, 160, 0.5, -12)
-    box.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    box.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     box.BackgroundTransparency = 0.6
-    box.Text = config.Placeholder or "Type..."
+    box.Text = tostring(config.Default or "")
+    box.PlaceholderText = tostring(config.PlaceholderText or config.Placeholder or "Type...")
     box.Font = THEME.Font
     box.TextColor3 = THEME.Text
+    box.PlaceholderColor3 = THEME.TextDim
     box.TextSize = 13
-    box.ClearTextOnFocus = config.Clear or false
+    box.ClearTextOnFocus = config.TextDisappear == true or config.Clear == true
     box.Parent = base
     Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
 
+    local api = {
+        Value = box.Text,
+        Type = "Textbox",
+        Instance = base
+    }
+
+    function api:Set(value)
+        box.Text = tostring(value or "")
+        api.Value = box.Text
+    end
+
     box.FocusLost:Connect(function(enterPressed)
+        api.Value = box.Text
         if config.Callback then config.Callback(box.Text, enterPressed) end
     end)
-    return base
+
+    if config.Flag and GlassLib.Flags then
+        GlassLib.Flags[config.Flag] = api
+    end
+
+    return api
 end
 
+
+-- =============================================================================
+-- GLASSLIB EXTENSION : COLORPICKER COMPLET (MODÈLE RENDU HSV AVEC POPUP)
+-- =============================================================================
+
 function GlassLib:AddColorpicker(tab, config)
+    config = config or {}
     local base = createBaseElement(tab.Page, 35)
-    local currentCPColor = config.Default or Color3.fromRGB(255, 0, 0)
+
+    local value = typeof(config.Default) == "Color3" and config.Default or THEME.Accent
+
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Size = UDim2.new(1, -75, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.Text = config.Name or "Colorpicker"
     label.Font = THEME.Font
@@ -573,24 +826,261 @@ function GlassLib:AddColorpicker(tab, config)
     label.BackgroundTransparency = 1
     label.Parent = base
 
-    local colorPreview = Instance.new("TextButton")
-    colorPreview.Size = UDim2.new(0, 30, 0, 18)
-    colorPreview.Position = UDim2.new(1, -40, 0.5, -9)
-    colorPreview.BackgroundColor3 = currentCPColor
-    colorPreview.Text = ""
-    colorPreview.Parent = base
-    Instance.new("UICorner", colorPreview).CornerRadius = UDim.new(0, 4)
+    local swatch = Instance.new("TextButton")
+    swatch.AutoButtonColor = false
+    swatch.BackgroundColor3 = value
+    swatch.Position = UDim2.new(1, -54, 0.5, -14)
+    swatch.Size = UDim2.new(0, 40, 0, 28)
+    swatch.Text = ""
+    swatch.Parent = base
+    Instance.new("UICorner", swatch).CornerRadius = UDim.new(0, 6)
 
-    colorPreview.MouseButton1Click:Connect(function()
-        -- Exemple simplifié : Alterne entre 3 couleurs Apple iconiques au clic
-        local colors = {Color3.fromRGB(255, 59, 48), Color3.fromRGB(52, 199, 89), Color3.fromRGB(0, 122, 255)}
-        local nextColor = colors[math.random(1, #colors)]
-        currentCPColor = nextColor
-        colorPreview.BackgroundColor3 = nextColor
-        if config.Callback then config.Callback(nextColor) end
+    local strokeSwatch = Instance.new("UIStroke")
+    strokeSwatch.Color = Color3.new(1, 1, 1)
+    strokeSwatch.Transparency = 0.65
+    strokeSwatch.Parent = swatch
+
+    ----------------------------------------------------------------
+    -- POPUP FLOTTANT (CONSTRUIT À L'INTÉRIEUR DU COMPOSANT)
+    ----------------------------------------------------------------
+    local popup = Instance.new("Frame")
+    popup.Name = "ColorpickerPopup"
+    popup.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    popup.Visible = false
+    popup.Size = UDim2.fromOffset(245, 285)
+    popup.Position = UDim2.new(0, 0, 0, 35)
+    popup.ClipsDescendants = true
+    popup.Parent = base
+    Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 9)
+
+    local pTitle = Instance.new("TextLabel")
+    pTitle.BackgroundTransparency = 1
+    pTitle.Position = UDim2.fromOffset(12, 8)
+    pTitle.Size = UDim2.new(1, -24, 0, 20)
+    pTitle.Text = config.Name or "Choisir une couleur"
+    pTitle.TextColor3 = THEME.Text
+    pTitle.Font = THEME.Font
+    pTitle.TextSize = 13
+    pTitle.TextXAlignment = Enum.TextXAlignment.Left
+    pTitle.Parent = popup
+
+    ----------------------------------------------------------------
+    -- SATURATION / VALEUR (CADRE DU GRADIENT RENDU)
+    ----------------------------------------------------------------
+    local sv = Instance.new("Frame")
+    sv.BackgroundColor3 = Color3.fromHSV(0, 1, 1)
+    sv.Position = UDim2.fromOffset(12, 34)
+    sv.Size = UDim2.fromOffset(185, 185)
+    sv.Parent = popup
+    Instance.new("UICorner", sv).CornerRadius = UDim.new(0, 7)
+
+    -- Blanc -> Couleur
+    local whiteGradient = Instance.new("UIGradient")
+    whiteGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+        ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
+    })
+    whiteGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    whiteGradient.Parent = sv
+
+    -- Noir -> Transparent Overlay
+    local blackOverlay = Instance.new("Frame")
+    blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+    blackOverlay.BackgroundTransparency = 1
+    blackOverlay.Size = UDim2.fromScale(1, 1)
+    blackOverlay.Parent = sv
+    Instance.new("UICorner", blackOverlay).CornerRadius = UDim.new(0, 7)
+
+    local blackGradient = Instance.new("UIGradient")
+    blackGradient.Rotation = 90
+    blackGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0)),
+    })
+    blackGradient.Transparency = NumberSequence.new({
+        NumberSequenceKeypoint.new(0, 0),
+        NumberSequenceKeypoint.new(1, 1),
+    })
+    blackGradient.Parent = blackOverlay
+
+    ----------------------------------------------------------------
+    -- CURSEUR SATURATION / VALEUR
+    ----------------------------------------------------------------
+    local svCursor = Instance.new("Frame")
+    svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+    svCursor.Size = UDim2.fromOffset(12, 12)
+    svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+    svCursor.Parent = sv
+    Instance.new("UICorner", svCursor).CornerRadius = UDim.new(0, 6)
+    local strokeSVC = Instance.new("UIStroke")
+    strokeSVC.Color = Color3.new(0, 0, 0)
+    strokeSVC.Transparency = 0.15
+    strokeSVC.Parent = svCursor
+
+    ----------------------------------------------------------------
+    -- BARRE HUE (TEINTE)
+    ----------------------------------------------------------------
+    local hueBar = Instance.new("Frame")
+    hueBar.BackgroundColor3 = Color3.new(1, 1, 1)
+    hueBar.Position = UDim2.fromOffset(208, 34)
+    hueBar.Size = UDim2.fromOffset(22, 185)
+    hueBar.Parent = popup
+    Instance.new("UICorner", hueBar).CornerRadius = UDim.new(0, 7)
+
+    local hueGradient = Instance.new("UIGradient")
+    hueGradient.Rotation = 90
+    hueGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0)),
+    })
+    hueGradient.Parent = hueBar
+
+    local hueCursor = Instance.new("Frame")
+    hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+    hueCursor.Size = UDim2.new(1, 4, 0, 8)
+    hueCursor.Position = UDim2.new(-0.5, 0, 0, 0)
+    hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+    hueCursor.Parent = hueBar
+    Instance.new("UICorner", hueCursor).CornerRadius = UDim.new(0, 4)
+    local strokeHueC = Instance.new("UIStroke")
+    strokeHueC.Color = Color3.new(0, 0, 0)
+    strokeHueC.Transparency = 0.15
+    strokeHueC.Parent = hueCursor
+
+    ----------------------------------------------------------------
+    -- COULEUR APERÇU BASSE
+    ----------------------------------------------------------------
+    local preview = Instance.new("Frame")
+    preview.BackgroundColor3 = value
+    preview.Position = UDim2.fromOffset(12, 231)
+    preview.Size = UDim2.fromOffset(218, 32)
+    preview.Parent = popup
+    Instance.new("UICorner", preview).CornerRadius = UDim.new(0, 6)
+
+    ----------------------------------------------------------------
+    -- ETAT INITIAL HSV & LOGIQUE API
+    ----------------------------------------------------------------
+    local h, s, v = Color3.toHSV(value)
+
+    local api = {
+        Value = value,
+        Type = "Colorpicker",
+        Instance = base
+    }
+
+    local function render()
+        local hueColor = Color3.fromHSV(h, 1, 1)
+        sv.BackgroundColor3 = hueColor
+        preview.BackgroundColor3 = Color3.fromHSV(h, s, v)
+        swatch.BackgroundColor3 = Color3.fromHSV(h, s, v)
+
+        svCursor.Position = UDim2.new(s, 0, 1 - v, 0)
+        hueCursor.Position = UDim2.new(0.5, 0, h, 0)
+    end
+
+    local function emit()
+        local color = Color3.fromHSV(h, s, v)
+        api.Value = color
+        if config.Callback then config.Callback(color) end
+    end
+
+    function api:Set(color)
+        if typeof(color) ~= "Color3" then return end
+        h, s, v = Color3.toHSV(color)
+        api.Value = color
+        render()
+        if config.Callback then config.Callback(color) end
+    end
+
+    ----------------------------------------------------------------
+    -- INTERACTIONS DE DRAGGING DE SOURIS
+    ----------------------------------------------------------------
+    local draggingSV = false
+    local draggingHue = false
+
+    local function updateSV(mouseX, mouseY)
+        local size = sv.AbsoluteSize
+        if size.X <= 0 or size.Y <= 0 then return end
+
+        local px = math.clamp((mouseX - sv.AbsolutePosition.X) / size.X, 0, 1)
+        local py = math.clamp((mouseY - sv.AbsolutePosition.Y) / size.Y, 0, 1)
+
+        s = px
+        v = 1 - py
+
+        render()
+        emit()
+    end
+
+    local function updateHue(mouseY)
+        local size = hueBar.AbsoluteSize
+        if size.Y <= 0 then return end
+
+        h = math.clamp((mouseY - hueBar.AbsolutePosition.Y) / size.Y, 0, 1)
+
+        render()
+        emit()
+    end
+
+    sv.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSV = true
+            updateSV(input.Position.X, input.Position.Y)
+        end
     end)
-    return base
+
+    hueBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingHue = true
+            updateHue(input.Position.Y)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mouse = game:GetService("UserInputService"):GetMouseLocation()
+            if draggingSV then
+                updateSV(mouse.X, mouse.Y - 36) -- Compensation topbar Roblox standard
+            elseif draggingHue then
+                updateHue(mouse.Y - 36)
+            end
+        end
+    end)
+
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSV = false
+            draggingHue = false
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- GESTION OUVERTURE ET FERMETURE DU MODAL CONTENEUR
+    ----------------------------------------------------------------
+    local open = false
+    swatch.MouseButton1Click:Connect(function()
+        open = not open
+        popup.Visible = open
+        local targetSize = open and 330 or 35
+            tween(base, TweenInfo.new(0.25, Enum.EasingStyle.Quart), {Size = UDim2.new(1, -6, 0, targetSize)})
+            if open then render() end
+        end)
+        render()
+    
+        if config.Flag and GlassLib.Flags then
+            GlassLib.Flags[config.Flag] = api
+        end
+    return api
 end
+
 
 -- Notification System
 function GlassLib:MakeNotification(config)
