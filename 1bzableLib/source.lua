@@ -1469,58 +1469,212 @@ function TabMethods:AddColorpicker(config)
         AnchorPoint = Vector2.new(0, 0.5),
         Size = UDim2.new(0, 40, 0, 28),
         Text = "",
+        ZIndex = 10,
         Parent = frame,
     })
+
     addCorner(swatch, 6)
     addStroke(swatch, Color3.new(1, 1, 1), 1, 0.65)
 
+    ----------------------------------------------------------------
+    -- POPUP FLOTTANT
+    ----------------------------------------------------------------
+
     local popup = new("Frame", {
+        Name = "ColorpickerPopup",
         BackgroundColor3 = Library.Theme.Main,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -190, 1, 4),
-        Size = UDim2.new(0, 180, 0, 132),
         Visible = false,
-        ZIndex = 120,
-        Parent = frame,
+        ZIndex = 2000,
+        Size = UDim2.fromOffset(245, 285),
+        Parent = makePopupHost(self.Window),
     })
-    addCorner(popup, 7)
+
+    addCorner(popup, 9)
     addStroke(popup, Library.Theme.Stroke, 1, 0)
 
-    local channels = {}
-    for index, channel in ipairs({"R", "G", "B"}) do
-        channels[channel] = new("TextBox", {
-            BackgroundColor3 = Library.Theme.Second,
-            BorderSizePixel = 0,
-            Position = UDim2.new(0, 8, 0, 8 + (index - 1) * 37),
-            Size = UDim2.new(1, -16, 0, 30),
-            PlaceholderText = channel .. " (0-255)",
-            TextColor3 = Library.Theme.Text,
-            Font = Enum.Font.Gotham,
-            TextSize = 12,
-            ClearTextOnFocus = false,
-            ZIndex = 121,
-            Parent = popup,
-        })
-        addCorner(channels[channel], 5)
-    end
+    new("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(12, 8),
+        Size = UDim2.new(1, -24, 0, 20),
+        Text = config.Name or "Choisir une couleur",
+        TextColor3 = Library.Theme.Text,
+        Font = Enum.Font.GothamBold,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 2001,
+        Parent = popup,
+    })
+
+    ----------------------------------------------------------------
+    -- SATURATION / VALEUR
+    ----------------------------------------------------------------
+
+    local sv = new("Frame", {
+        BackgroundColor3 = Color3.fromHSV(0, 1, 1),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(12, 34),
+        Size = UDim2.fromOffset(185, 185),
+        ZIndex = 2001,
+        Parent = popup,
+    })
+
+    addCorner(sv, 7)
+
+    -- Blanc -> couleur
+    local whiteGradient = new("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+            ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)),
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(1, 1),
+        }),
+        Rotation = 0,
+        Parent = sv,
+    })
+
+    -- Noir -> transparent
+    local blackOverlay = new("Frame", {
+        BackgroundColor3 = Color3.new(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.fromScale(1, 1),
+        ZIndex = 2002,
+        Parent = sv,
+    })
+
+    addCorner(blackOverlay, 7)
+
+    local blackGradient = new("UIGradient", {
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),
+            ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0)),
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(1, 1),
+        }),
+        Parent = blackOverlay,
+    })
+
+    ----------------------------------------------------------------
+    -- CURSEUR SV
+    ----------------------------------------------------------------
+
+    local svCursor = new("Frame", {
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel = 0,
+        Size = UDim2.fromOffset(12, 12),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        ZIndex = 2005,
+        Parent = sv,
+    })
+
+    addCorner(svCursor, 6)
+    addStroke(svCursor, Color3.new(0, 0, 0), 1, 0.15)
+
+    ----------------------------------------------------------------
+    -- BARRE HUE
+    ----------------------------------------------------------------
+
+    local hueBar = new("Frame", {
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(208, 34),
+        Size = UDim2.fromOffset(22, 185),
+        ZIndex = 2001,
+        Parent = popup,
+    })
+
+    addCorner(hueBar, 7)
+
+    local hueGradient = new("UIGradient", {
+        Rotation = 90,
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+            ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
+            ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+            ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+            ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+            ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+            ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0)),
+        }),
+        Parent = hueBar,
+    })
+
+    local hueCursor = new("Frame", {
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 4, 0, 8),
+        Position = UDim2.new(-0.5, 0, 0, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        ZIndex = 2005,
+        Parent = hueBar,
+    })
+
+    addCorner(hueCursor, 4)
+    addStroke(hueCursor, Color3.new(0, 0, 0), 1, 0.15)
+
+    ----------------------------------------------------------------
+    -- PREVIEW
+    ----------------------------------------------------------------
+
+    local preview = new("Frame", {
+        BackgroundColor3 = value,
+        BorderSizePixel = 0,
+        Position = UDim2.fromOffset(12, 231),
+        Size = UDim2.fromOffset(218, 32),
+        ZIndex = 2001,
+        Parent = popup,
+    })
+
+    addCorner(preview, 6)
+    addStroke(preview, Library.Theme.Stroke, 1, 0.1)
+
+    ----------------------------------------------------------------
+    -- ETAT HSV
+    ----------------------------------------------------------------
+
+    local h, s, v = Color3.toHSV(value)
 
     local api = {
         Value = value,
         Type = "Colorpicker",
     }
 
-    local function updateInputs(color)
-        channels.R.Text = tostring(math.floor(color.R * 255 + 0.5))
-        channels.G.Text = tostring(math.floor(color.G * 255 + 0.5))
-        channels.B.Text = tostring(math.floor(color.B * 255 + 0.5))
+    local function render()
+        local hueColor = Color3.fromHSV(h, 1, 1)
+
+        sv.BackgroundColor3 = hueColor
+        preview.BackgroundColor3 = Color3.fromHSV(h, s, v)
+        swatch.BackgroundColor3 = Color3.fromHSV(h, s, v)
+
+        svCursor.Position = UDim2.new(
+            s,
+            0,
+            1 - v,
+            0
+        )
+
+        hueCursor.Position = UDim2.new(
+            -0.5,
+            0,
+            h,
+            0
+        )
     end
 
-    local function apply()
-        local r = math.clamp(tonumber(channels.R.Text) or 0, 0, 255)
-        local g = math.clamp(tonumber(channels.G.Text) or 0, 0, 255)
-        local b = math.clamp(tonumber(channels.B.Text) or 0, 0, 255)
+    local function emit()
+        local color = Color3.fromHSV(h, s, v)
 
-        api:Set(Color3.fromRGB(r, g, b))
+        api.Value = color
+        preview.BackgroundColor3 = color
+        swatch.BackgroundColor3 = color
+
+        safeCallback(config.Callback, color)
     end
 
     function api:Set(color)
@@ -1528,25 +1682,230 @@ function TabMethods:AddColorpicker(config)
             return
         end
 
+        h, s, v = Color3.toHSV(color)
         api.Value = color
-        swatch.BackgroundColor3 = color
-        updateInputs(color)
+        render()
         safeCallback(config.Callback, color)
     end
 
-    connect(swatch.Activated, function()
-        popup.Visible = not popup.Visible
+    ----------------------------------------------------------------
+    -- CALCUL SV
+    ----------------------------------------------------------------
+
+    local draggingSV = false
+    local draggingHue = false
+
+    local function updateSV(mouseX, mouseY)
+        local size = sv.AbsoluteSize
+        if size.X <= 0 or size.Y <= 0 then
+            return
+        end
+
+        local px = math.clamp(
+            (mouseX - sv.AbsolutePosition.X) / size.X,
+            0,
+            1
+        )
+
+        local py = math.clamp(
+            (mouseY - sv.AbsolutePosition.Y) / size.Y,
+            0,
+            1
+        )
+
+        s = px
+        v = 1 - py
+
+        render()
+        emit()
+    end
+
+    local function updateHue(mouseY)
+        local size = hueBar.AbsoluteSize
+        if size.Y <= 0 then
+            return
+        end
+
+        h = math.clamp(
+            (mouseY - hueBar.AbsolutePosition.Y) / size.Y,
+            0,
+            1
+        )
+
+        render()
+        emit()
+    end
+
+    connect(sv.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSV = true
+            updateSV(input.Position.X, input.Position.Y)
+        end
     end)
 
-    for _, input in pairs(channels) do
-        connect(input.FocusLost, apply)
+    connect(hueBar.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingHue = true
+            updateHue(input.Position.Y)
+        end
+    end)
+
+    connect(UserInputService.InputChanged, function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement then
+            return
+        end
+
+        if draggingSV then
+            updateSV(input.Position.X, input.Position.Y)
+        end
+
+        if draggingHue then
+            updateHue(input.Position.Y)
+        end
+    end)
+
+    connect(UserInputService.InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            draggingSV = false
+            draggingHue = false
+        end
+    end)
+
+    ----------------------------------------------------------------
+    -- POSITIONNEMENT DU POPUP
+    ----------------------------------------------------------------
+
+    local function positionPopup()
+        if not popup.Visible then
+            return
+        end
+
+        local root = self.Window.Gui
+
+        local rootPos = root.AbsolutePosition
+        local rootSize = root.AbsoluteSize
+
+        local swatchPos = swatch.AbsolutePosition
+        local swatchSize = swatch.AbsoluteSize
+
+        local popupSize = popup.AbsoluteSize
+
+        local x =
+            swatchPos.X
+            - rootPos.X
+            + swatchSize.X
+            - popupSize.X
+
+        local y =
+            swatchPos.Y
+            - rootPos.Y
+            + swatchSize.Y
+            + 6
+
+        if x < 8 then
+            x = 8
+        end
+
+        if x + popupSize.X > rootSize.X - 8 then
+            x = rootSize.X - popupSize.X - 8
+        end
+
+        if y + popupSize.Y > rootSize.Y - 8 then
+            y = swatchPos.Y - rootPos.Y - popupSize.Y - 6
+        end
+
+        if y < 8 then
+            y = 8
+        end
+
+        popup.Position = UDim2.fromOffset(x, y)
     end
+
+    ----------------------------------------------------------------
+    -- OUVERTURE / FERMETURE
+    ----------------------------------------------------------------
+
+    connect(swatch.Activated, function()
+        local newState = not popup.Visible
+
+        -- Ferme les autres dropdown/popup.
+        for _, other in ipairs(self.Window.Dropdowns or {}) do
+            if other ~= popup and other.Parent then
+                other.Visible = false
+            end
+        end
+
+        popup.Visible = newState
+
+        if popup.Visible then
+            render()
+
+            task.defer(function()
+                if popup.Visible then
+                    positionPopup()
+                end
+            end)
+        end
+    end)
+
+    connect(UserInputService.InputEnded, function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+            return
+        end
+
+        if not popup.Visible then
+            return
+        end
+
+        task.defer(function()
+            if not popup.Visible then
+                return
+            end
+
+            local mouse = UserInputService:GetMouseLocation()
+
+            local popupPos = popup.AbsolutePosition
+            local popupSize = popup.AbsoluteSize
+
+            local swatchPos = swatch.AbsolutePosition
+            local swatchSize = swatch.AbsoluteSize
+
+            local insidePopup =
+                mouse.X >= popupPos.X
+                and mouse.X <= popupPos.X + popupSize.X
+                and mouse.Y >= popupPos.Y
+                and mouse.Y <= popupPos.Y + popupSize.Y
+
+            local insideSwatch =
+                mouse.X >= swatchPos.X
+                and mouse.X <= swatchPos.X + swatchSize.X
+                and mouse.Y >= swatchPos.Y
+                and mouse.Y <= swatchPos.Y + swatchSize.Y
+
+            if not insidePopup and not insideSwatch then
+                popup.Visible = false
+            end
+        end)
+    end)
+
+    connect(self.Window.Gui:GetPropertyChangedSignal("AbsolutePosition"), function()
+        if popup.Visible then
+            positionPopup()
+        end
+    end)
+
+    connect(self.Window.Gui:GetPropertyChangedSignal("AbsoluteSize"), function()
+        if popup.Visible then
+            positionPopup()
+        end
+    end)
 
     if config.Flag then
         Library.Flags[config.Flag] = api
     end
 
     api:Set(value)
+
     return api
 end
 
