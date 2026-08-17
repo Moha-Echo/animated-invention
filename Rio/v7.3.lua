@@ -215,23 +215,33 @@ CTX.OffsetsConfig = {
     -- Vos valeurs de réglages parfaites pour le SkeletonV2
     ["SkeletonV2"] = {
         Position = Vector3.new(0.3, -1.7, 0),
-        Rotation = CFrame.Angles(math.rad(350), math.rad(0), math.rad(200))
+        Rotation = CFrame.Angles(
+            math.rad(350),
+            math.rad(0),
+            math.rad(200)
+        )
     },
-    -- Exemple pour une Bayonet si elle flotte (à ajuster au besoin)
+
+    -- Exemple pour une Bayonet si elle flotte
     ["Bayonet"] = {
         Position = Vector3.new(0.2, -1.5, -0.2),
-        Rotation = CFrame.Angles(math.rad(0), math.rad(90), math.rad(0))
+        Rotation = CFrame.Angles(
+            math.rad(0),
+            math.rad(90),
+            math.rad(0)
+        )
     },
-    -- Configuration par défaut générique si le couteau n'est pas dans la liste
+
+    -- Configuration par défaut
     ["Default"] = {
         Position = Vector3.new(0, -1.7, 0),
-        Rotation = CFrame.Angles(math.rad(0), math.rad(0), math.rad(0))
+        Rotation = CFrame.Angles(
+            math.rad(0),
+            math.rad(0),
+            math.rad(0)
+        )
     }
 }
-
-
-CTX.Skin.ManualOffset = Vector3.zero
-CTX.Skin.ManualRotation = Vector3.zero
 
 CTX.Skin = {
     EnabledModel = false,
@@ -240,10 +250,16 @@ CTX.Skin = {
     EnabledTrail = false,
 
     Intensity = 1,
-    Knife = "SkeletonV2",
-    Skin = "HologramSkeleton",
-    Texture = "HologramSkeleton",
+
+    Knife = "Kukri",
+
+    Skin = "HologramKukri",
+    Texture = "HologramKukri",
     VFX = "Divine",
+
+    -- Réglages manuels ajoutés pour V7.3
+    ManualOffset = Vector3.zero,
+    ManualRotation = Vector3.zero,
 
     OriginalViewModelName = nil,
     OriginalBackup = nil,
