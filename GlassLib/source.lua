@@ -1224,6 +1224,15 @@ function GlassLib:MakeNotification(config)
     end)
 end
 
+
+local function v3SetModal(guiObject, enabled)
+    if guiObject and guiObject:IsA("TextButton") then
+        pcall(function()
+            guiObject.Modal = enabled
+        end)
+    end
+end
+
 -- Toggle Minimize/Maximize (Ouvre / Ferme le menu de manière élastique)
 -- Sink mouse interaction on actual controls so clicks do not fall through.
 local function v3ModalizeApi(api)
@@ -1409,13 +1418,6 @@ local function v3GuiParent()
     return PlayerGui
 end
 
-local function v3SetModal(guiObject, enabled)
-    if guiObject and guiObject:IsA("TextButton") then
-        pcall(function()
-            guiObject.Modal = enabled
-        end)
-    end
-end
 
 local function v3ProfileCard(window, parent)
     local profile = Instance.new("Frame")
