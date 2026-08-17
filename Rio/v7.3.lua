@@ -16,7 +16,14 @@
 ------------------------------------------------------------
 -- SERVICES & NETTOYAGE
 ------------------------------------------------------------
-local Lib = "1bzableLib"
+-- 1. Récupération ou création de la variable avec une valeur par défaut
+local Lib = getgenv().SelectedLib
+
+if not Lib then
+    Lib = "1bzableLib" -- Votre bibliothèque par défaut si l'exécuteur n'a rien mis
+    getgenv().SelectedLib = Lib
+end
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
