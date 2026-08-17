@@ -1746,7 +1746,7 @@ function GlassLib:MakeWindow(config)
     window.ScreenGui = gui
     window.Gui = gui
 
-    --[[
+    
     local shadow = Instance.new("Frame")
     shadow.Name = "GlassShadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1759,7 +1759,7 @@ function GlassLib:MakeWindow(config)
     shadow.Parent = gui
     uiCorner(shadow, 24)
     window.Shadow = shadow
-
+--[[
     local shadow = Instance.new("ImageLabel") -- Changé en ImageLabel
     shadow.Name = "GlassShadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1777,7 +1777,7 @@ function GlassLib:MakeWindow(config)
     shadow.ZIndex = 0
     shadow.Parent = gui
     window.Shadow = shadow
-]]--
+
 
     local shadow = Instance.new("ImageLabel")
     shadow.Name = "GlassShadow"
@@ -1803,7 +1803,7 @@ function GlassLib:MakeWindow(config)
     shadow.Parent = gui
     window.Shadow = shadow
 
-
+]]--
     local main = Instance.new("Frame")
     main.Name = "MainFrame"
     main.AnchorPoint = Vector2.new(0.5, 0.5)
