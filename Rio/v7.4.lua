@@ -442,6 +442,30 @@ CTX.OffsetsConfig = {
     }
 }
 
+CTX.Skin = {
+    EnabledModel = false,
+    EnabledSkin = false,
+    EnabledVFX = false,
+    EnabledTrail = false,
+
+    Intensity = 1,
+
+    Knife = "Kukri",
+
+    Skin = "HologramKukri",
+    Texture = "HologramKukri",
+    VFX = "Divine",
+
+    -- Réglages manuels ajoutés pour V7.3
+    ManualOffset = Vector3.zero,
+    ManualRotation = Vector3.zero,
+
+    OriginalViewModelName = nil,
+    OriginalBackup = nil,
+    BackupDone = false,
+}
+
+
 
 
 -- Services Roblox
