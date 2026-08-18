@@ -18,6 +18,7 @@
 ------------------------------------------------------------
 -- 1. Récupération ou création de la variable avec une valeur par défaut
 local Lib = getgenv().SelectedLib
+local debugMode = true
 
 if not Lib then
     Lib = "1bzableLib" -- Votre bibliothèque par défaut si l'exécuteur n'a rien mis
@@ -291,13 +292,90 @@ local knifeThrowModels = assets:WaitForChild("KnifeThrowModels")
 -- ==========================================
 -- FONCTION : TROUVER LE VIEWMODEL DYNAMIQUEMENT
 -- ==========================================
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local function getKnifeModelNameFromAttribut()
+    local nomCouteau = localPlayer:GetAttribute("EquippedKnife")
+    if not nomCouteau then return nil end
+    
+    -- LA FORMULE ULTIME : Isole le dernier mot (ex: "Karambit", "Butterfly")
+    local nomModel = string.match(nomCouteau, "(%u[^%u]*)$")
+    return nomModel
+end
+
 local function trouverViewModelActuel()
     Camera = workspace.CurrentCamera or Camera
+    if not Camera then return nil end
 
-    if not Camera then
-        return nil
+    local waitFor = getKnifeModelNameFromAttribut()
+
+    if waitFor then
+        if debugMode == true then print("Recherche du modèle commençant par :", waitFor) end
+        
+        -- 1. On vérifie si le modèle (avec ou sans V2) est DÉJÀ là
+        for _, child in ipairs(Camera:GetChildren()) do
+            if child:IsA("Model") and child:FindFirstChild("Knife") then
+                -- string.sub vérifie si le début du nom correspond (ex: "KarambitV2" commence par "Karambit")
+                if string.sub(child.Name, 1, #waitFor) == waitFor then
+                    if debugMode == true then print("Modèle trouvé immédiatement :", child.Name) end
+                    return child
+                end
+            end
+        end
+        
+        -- 2. Sinon, on attend qu'un modèle correspondant soit ajouté à la caméra
+        local viewModelTrouve = nil
+        local connection
+        
+        connection = Camera.ChildAdded:Connect(function(child)
+            if child:IsA("Model") and child:FindFirstChild("Knife") then
+                if string.sub(child.Name, 1, #waitFor) == waitFor then
+                    viewModelTrouve = child
+                end
+            end
+        end)
+        
+        -- Boucle d'attente sécurisée à 5 secondes max pour éviter les blocages infinis
+        local tempsMax = 5
+        local tempsEcoule = 0
+        while not viewModelTrouve and tempsEcoule < tempsMax do
+            tempsEcoule = tempsEcoule + task.wait()
+        end
+        
+        connection:Disconnect() -- On nettoie l'événement pour éviter les fuites
+        
+        if viewModelTrouve then
+            if debugMode == true then print("Modèle apparu et trouvé :", viewModelTrouve.Name) end
+            return viewModelTrouve
+        end
+    else 
+        -- Code de secours si l'attribut n'existe pas (prend le premier ViewModel avec un Knife)
+        for _, child in ipairs(Camera:GetChildren()) do
+            if child:IsA("Model") and child:FindFirstChild("Knife") then
+                return child
+            end
+        end
+        
+        local viewModelTrouve = nil
+        local connection
+        connection = Camera.ChildAdded:Connect(function(child)
+            if child:IsA("Model") and child:FindFirstChild("Knife") then
+                viewModelTrouve = child
+            end
+        end)
+        
+        while not viewModelTrouve do
+            task.wait()
+        end
+        
+        connection:Disconnect()
+        return viewModelTrouve
     end
 
+    --[[
     for _, child in ipairs(Camera:GetChildren()) do
         if child:IsA("Model")
             and child:FindFirstChild("Knife")
@@ -305,6 +383,7 @@ local function trouverViewModelActuel()
             return child
         end
     end
+    ]]--
 
     return nil
 end
