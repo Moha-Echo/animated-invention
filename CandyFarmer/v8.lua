@@ -23,7 +23,7 @@ local CFG = {
 
     Enabled = true,
     Spin = true, SpinSpeed = 540,
-    Speed = 27,        -- vitesse constante (studs/s)
+    Speed = 20,        -- vitesse constante (studs/s)
     SpeedVar = 1,      -- alterne Speed / Speed - SpeedVar entre chaque bonbon
     Turn = 320,        -- virage max (°/s)
     TouchR = 15,       -- rayon de touch en continu
