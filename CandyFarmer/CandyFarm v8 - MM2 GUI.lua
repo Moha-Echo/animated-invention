@@ -29,7 +29,7 @@ local CFG = {
     TouchR = 15,       -- rayon de touch en continu
     MissDist = 6,      -- distance de dépassement avant demi-tour sec
     SafeDepth = 150, FullAt = 50,
-    Cluster = false, ClusterR = 100, ClusterW = 3, AheadW = 8,
+    Cluster = true, ClusterR = 100, ClusterW = 3, AheadW = 8,
     Boost = true, BoostMult = 1.8, BoostN = 3, BoostR = 20, BoostMax = 2.5, BoostCool = 10,
     TPFar = true, TPDist = 150,
     Killer = true, KillerR = 20,
