@@ -53,7 +53,7 @@ local CFG = {
     Ghost = true, GhostR = 20,
     AutoRejoin = true,
     RejoinOnAnyError = true,    -- rejoint aussi sur un autre message d'erreur (sans pénalité)
-    KickKeywords = "Invalid, Position", -- mots-clés = vrai kick du jeu (compteur + pénalités)
+    KickKeywords = "invalid,position", -- mots-clés = vrai kick du jeu (compteur + pénalités)
     Hitbox = true,
     Debug = true,
     -- Autos
@@ -202,39 +202,157 @@ local zoneActive = false   -- pré-manche : zone secrète / sous la map
 getgenv().FPDH = workspace.FallenPartsDestroyHeight
 workspace.FallenPartsDestroyHeight = 0/0
 
--- ===== Anti-kick : rejoin automatique (filtré sur le message du prompt) =====
+-- ===== Anti-kick : lecture fiable du message + rejoin =====
+
+local CoreGui = game:GetService("CoreGui")
+local processedPrompts = setmetatable({}, { __mode = "k" })
+
+local function nettoyerTexte(text)
+    return tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function estPlaceholder(text)
+    text = nettoyerTexte(text):lower()
+
+    return text == ""
+        or text == "label"
+        or text == "description"
+        or text == "textlabel"
+end
+
+local function lireMessagePrompt(prompt)
+    local deadline = os.clock() + 8
+    local meilleurTexte = ""
+    local debutTexte = nil
+
+    while prompt.Parent and os.clock() < deadline do
+        local area = prompt:FindFirstChild("MessageArea", true) or prompt
+
+        -- 1. On privilégie les noms connus des champs de message.
+        for _, nom in ipairs({
+            "ErrorErrorMessage",
+            "ErrorMessage",
+            "ErrorText",
+            "MessageLabel"
+        }) do
+            local label = area:FindFirstChild(nom, true)
+
+            if label and label:IsA("TextLabel") then
+                local texte = nettoyerTexte(label.Text)
+
+                if not estPlaceholder(texte) then
+                    return texte
+                end
+            end
+        end
+
+        -- 2. Sinon, recherche récursive de tous les TextLabel.
+        local texteActuel = ""
+
+        for _, objet in ipairs(area:GetDescendants()) do
+            if objet:IsA("TextLabel") then
+                local texte = nettoyerTexte(objet.Text)
+
+                if not estPlaceholder(texte)
+                    and #texte > #texteActuel then
+                    texteActuel = texte
+                end
+            end
+        end
+
+        -- On laisse le temps au message de se compléter.
+        if texteActuel ~= "" then
+            if texteActuel ~= meilleurTexte then
+                meilleurTexte = texteActuel
+                debutTexte = os.clock()
+            elseif debutTexte and os.clock() - debutTexte >= 1 then
+                return meilleurTexte
+            end
+        end
+
+        task.wait(0.05)
+    end
+
+    return meilleurTexte
+end
+
+local function traiterPrompt(child)
+    if child.Name ~= "ErrorPrompt" or processedPrompts[child] then
+        return
+    end
+
+    processedPrompts[child] = true
+
+    task.spawn(function()
+        local okm, msg = pcall(lireMessagePrompt, child)
+        msg = okm and nettoyerTexte(msg) or ""
+
+        local low = msg:lower()
+        local isKick = false
+
+        for kw in tostring(CFG.KickKeywords):gmatch("[^,]+") do
+            kw = kw:match("^%s*(.-)%s*$")
+
+            if kw ~= "" and low:find(kw:lower(), 1, true) then
+                isKick = true
+                break
+            end
+        end
+
+        pushLog(
+            "ANTI-KICK",
+            "Message : " .. (msg ~= "" and msg or "(vide)")
+                .. " | kick = " .. tostring(isKick)
+        )
+
+        if isKick then
+            S.kicks += 1
+
+            if lastAct == "boost" then
+                S.boostPen += 0.1
+            elseif lastAct == "tp" then
+                S.tpPen += 200
+            else
+                S.speedPen += 1
+            end
+
+            saveState()
+
+            pushLog(
+                "ANTI-KICK",
+                "Kick pendant : " .. lastAct
+                    .. " (total " .. S.kicks .. ")"
+            )
+        end
+
+        if CFG.AutoRejoin and (isKick or CFG.RejoinOnAnyError) then
+            task.wait(3)
+
+            pcall(function()
+                TeleportService:Teleport(game.PlaceId, localPlayer)
+            end)
+        end
+    end)
+end
+
 task.spawn(function()
     local ok, overlay = pcall(function()
-        return game:GetService("CoreGui"):WaitForChild("RobloxPromptGui", 30):WaitForChild("promptOverlay", 30)
+        local gui = CoreGui:WaitForChild("RobloxPromptGui", 30)
+        return gui and gui:WaitForChild("promptOverlay", 30)
     end)
-    if not ok or not overlay then return end
-    overlay.ChildAdded:Connect(function(child)
-        if child.Name ~= "ErrorPrompt" then return end
-        task.spawn(function()
-            local okm, msg = pcall(function()
-                return child:WaitForChild("MessageArea", 3):WaitForChild("ErrorFrame", 3):WaitForChild("ErrorMessage", 3).Text
-            end)
-            msg = okm and tostring(msg) or ""
-            local low, isKick = msg:lower(), false
-            for kw in tostring(CFG.KickKeywords):gmatch("[^,]+") do
-                kw = kw:match("^%s*(.-)%s*$")
-                if kw ~= "" and low:find(kw:lower(), 1, true) then isKick = true break end
-            end
-            pushLog("ANTI-KICK", "Message : " .. (msg ~= "" and msg or "(vide)") .. " | kick = " .. tostring(isKick))
-            if isKick then
-                S.kicks += 1
-                if lastAct == "boost" then S.boostPen += 0.1
-                elseif lastAct == "tp" then S.tpPen += 200
-                else S.speedPen += 1 end
-                saveState()
-                pushLog("ANTI-KICK", "Kick pendant : " .. lastAct .. " (total " .. S.kicks .. ")")
-            end
-            if CFG.AutoRejoin and (isKick or CFG.RejoinOnAnyError) then
-                task.wait(3)
-                pcall(function() TeleportService:Teleport(game.PlaceId, localPlayer) end)
-            end
-        end)
-    end)
+
+    if not ok or not overlay then
+        warn("[ANTI-KICK] Impossible de trouver promptOverlay.")
+        return
+    end
+
+    -- Détection des prochaines fenêtres.
+    overlay.ChildAdded:Connect(traiterPrompt)
+
+    -- Détection si la fenêtre existe déjà.
+    for _, child in ipairs(overlay:GetChildren()) do
+        traiterPrompt(child)
+    end
 end)
 
 -- ===== Sécurité Anti-Loading Screen Bug =====
