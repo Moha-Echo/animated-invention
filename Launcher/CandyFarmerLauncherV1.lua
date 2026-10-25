@@ -8,7 +8,11 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local LocalPlayer = Players.LocalPlayer
 
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local v = getgenv().v or getgenv().version or "v9"
+-- Changement ici : utilisation de cf_version pour éviter les conflits avec 'v'
+local cf_version = getgenv().cf_version or getgenv().version or "v9"
+if type(cf_version) == "function" then
+    cf_version = "v9"
+end
 
 local info
 local ok = pcall(function()
@@ -24,15 +28,15 @@ local experienceName = info.Name
 print("[CandyFarmer Launcher] Experience : " .. experienceName)
 
 if not experienceName:find("2", 1, true) then
-    print("[CandyFarmer Launcher] '2' absent → CandyFarmer "..v.." non chargé.")
+    print("[CandyFarmer Launcher] '2' absent → CandyFarmer "..tostring(cf_version).." non chargé.")
     return
 end
 
-print("[CandyFarmer Launcher] '2' détecté → chargement de CandyFarmer "..v..".")
+print("[CandyFarmer Launcher] '2' détecté → chargement de CandyFarmer "..tostring(cf_version)..".")
 
 local okLoad, loadError = pcall(function()
     loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/CandyFarmer/"..v..".lua" --"https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/Nexus/v7-CTX.lua"
+        "https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/CandyFarmer/"..tostring(cf_version)..".lua" --"https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/Nexus/v7-CTX.lua"
     ))()
 end)
 
