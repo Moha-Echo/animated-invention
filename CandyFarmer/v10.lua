@@ -26,6 +26,11 @@ localPlayer.CharacterAdded:Connect(function(char)
 end)
 
 local Lib = "1bzableLib"
+local LibVersion = getgenv().LibVersion or "v3"
+if type(LibVersion) == "function" then
+    LibVersion = "v3"
+end
+
 local CTX = {
     SETTINGS_FILE = "CandyFarm_settings.json",
     uiReady = false,
@@ -38,7 +43,7 @@ local CTX = {
 --local SETTINGS_FILE = "CandyFarm_settings.json"
 --local uiReady, cfgDirty, cfgDirtyT = false, false, 0
 
-local UILib
+local UI
 local UIREG = {}   -- clé CFG -> contrôle UI (pour "Restaurer les valeurs par défaut")
 local function pushLog(tag, msg) print("[" .. tag .. "] " .. msg) end
 
@@ -208,8 +213,8 @@ end
 
 local function notify(title, content, t)
     print("[NOTIF] " .. title .. " : " .. content)
-    if CFG.Notify and UILib then
-        pcall(function() UILib:MakeNotification({Name = title, Content = content, Time = t or 6}) end)
+    if CFG.Notify and UI then
+        pcall(function() UI:MakeNotification({Name = title, Content = content, Time = t or 6}) end)
     end
 end
 
@@ -2124,9 +2129,10 @@ end
 local statLbl = {}
 
 pcall(function()
-    UILib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/" .. Lib .. "/source.lua"))()
+    UILib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/" .. Lib .. "/source"..LibVersion..".lua"))()
     CTX.Window = UILib:MakeWindow({
         Name = "CandyFarm v10",
+        WaitForGameLoaded = true,
         HidePremium = true,
         SaveConfig = false,
     })
