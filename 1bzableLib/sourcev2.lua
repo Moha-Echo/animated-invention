@@ -3002,7 +3002,7 @@ function Library:MakeWindow(config)
             Parent = introTrack,
         })
         addCorner(introFill, 3)
-        local introDuration = math.clamp(tonumber(config.IntroDuration) or 0.65, 0.25, 1.8)
+        local introDuration = math.clamp(tonumber(config.IntroDuration) or 2, 0.25, 1.8)
         TweenService:Create(introFill, TweenInfo.new(introDuration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 1, 0),
         }):Play()
