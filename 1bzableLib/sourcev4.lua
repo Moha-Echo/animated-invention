@@ -223,6 +223,7 @@ local function GetPlayerList()
     return names
 end
 
+-- [CORRECTIF MAJUSCULES WEBHOOK]
 local TelemetryFieldInfo = {
     Executor = {Name = "Utilisateur", Get = function(payload) return payload.executor end},
     State = {Name = "État", Get = function(payload) return payload.state end},
@@ -233,10 +234,11 @@ local TelemetryFieldInfo = {
     JobId = {Name = "JobId", Get = function(payload) return payload.job_id end},
     Players = {Name = "Liste des joueurs", Get = function(payload) return payload.players end},
     Timestamp = {Name = "Horodatage", Get = function(payload) return payload.timestamp end},
-    Tokens = {Name = "Bonbons du compte", Get = function(payload) return payload.tokens end},
-    Phase = {Name = "Phase actuelle", Get = function(payload) return payload.phase end},
-    Map = {Name = "Map choisie", Get = function(payload) return payload.map end},
+    Tokens = {Name = "Bonbons du compte", Get = function(payload) return payload.tokens or payload.Tokens end},
+    Phase = {Name = "Phase actuelle", Get = function(payload) return payload.phase or payload.Phase end},
+    Map = {Name = "Map choisie", Get = function(payload) return payload.map or payload.Map end},
 }
+
 
 -- Récupère un champ natif ou un champ personnalisé.
 local function GetTelemetryFieldInfo(key)
