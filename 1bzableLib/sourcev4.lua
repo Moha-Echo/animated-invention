@@ -234,9 +234,9 @@ local TelemetryFieldInfo = {
     JobId = {Name = "JobId", Get = function(payload) return payload.job_id end},
     Players = {Name = "Liste des joueurs", Get = function(payload) return payload.players end},
     Timestamp = {Name = "Horodatage", Get = function(payload) return payload.timestamp end},
-    Tokens = {Name = "Bonbons du compte", Get = function(payload) return payload.tokens or payload.Tokens end},
-    Phase = {Name = "Phase actuelle", Get = function(payload) return payload.phase or payload.Phase end},
-    Map = {Name = "Map choisie", Get = function(payload) return payload.map or payload.Map end},
+    -- Tokens = {Name = "Bonbons du compte", Get = function(payload) return payload.tokens or payload.Tokens end},
+    -- Phase = {Name = "Phase actuelle", Get = function(payload) return payload.phase or payload.Phase end},
+    -- Map = {Name = "Map choisie", Get = function(payload) return payload.map or payload.Map end},
 }
 
 
