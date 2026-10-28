@@ -1,6 +1,6 @@
 
 --========================================================--
--- 1bzableLib / sourcev4.lua
+-- 1bzableLib / source.lua
 -- Self-contained Orion-style UI API.
 -- Designed to be a drop-in UI layer for a project that
 -- already uses Orion-like calls.
@@ -356,7 +356,7 @@ local function SendTelemetry(eventName, showNotification)
         and (titleBase .. " Heartbeat")
         or (titleBase .. " · " .. tostring(eventName or "Événement"))
     local body = HttpService:JSONEncode({
-        username = titleBase .. " Webhook",
+        -- username = titleBase .. " Webhook",
         allowed_mentions = {parse = {}},
         embeds = {{
             title = title,
