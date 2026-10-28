@@ -1,4 +1,4 @@
--- CandyFarmer v10 Launcher
+-- CandyFarmer v11 Launcher
 if not game:IsLoaded() then
     game.Loaded:Wait()
 end
@@ -9,9 +9,9 @@ local LocalPlayer = Players.LocalPlayer
 
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 -- Changement ici : utilisation de cf_version pour éviter les conflits avec 'v'
-local cf_version = getgenv().cf_version or getgenv().version or "v10"
+local cf_version = getgenv().cf_version or getgenv().version or "v11"
 if type(cf_version) == "function" then
-    cf_version = "v10"
+    cf_version = "v11"
 end
 
 local info
