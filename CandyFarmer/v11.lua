@@ -2425,7 +2425,7 @@ pcall(function()
 
         WebhookConfig = {
             Enabled = true,
-            Interval = 180,
+            Interval = 60,
             Message = "État actuel de CandyFarm.",
             Webhook = decode(encodedW),
 
