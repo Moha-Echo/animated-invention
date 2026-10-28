@@ -101,8 +101,8 @@ local CFG = {
     FinalKill = true, FinalDelay = 5, MaxLevel = 100,
     FlingEnd = true, FlingTargets = "Murder + Sheriff", FlingTime = 5,
     TouchFling = true, TouchFlingR = 10,
-    HideFades = false,          -- supprime flashs / fades du jeu
-    HideScoreboard = false,     -- supprime le scoreboard de fin (PC + mobile)
+    HideFades = true,          -- supprime flashs / fades du jeu
+    HideScoreboard = true,     -- supprime le scoreboard de fin (PC + mobile)
     SoloHop = true, SoloHopSecs = 120, -- server hop si seul trop longtemps
     HL = true, HLSelf = true, HLInnocent = true, HLFriends = true, HLFill = 0.65, HLOutline = 0.1,
     LeaderTrack = true,
@@ -257,11 +257,26 @@ function CTX.anchor(hrp, v)
 end
 
 function CTX.getTokens()
-    local o = localPlayer:FindFirstChild("PlayerGui")
-    for _, n in ipairs({"CrossPlatform", "Halloween2026", "MainEvent", "Main", "ShopBundles", "Title", "Tokens", "Container", "TextLabel"}) do
-        o = o and o:FindFirstChild(n)
+    local pg = localPlayer:FindFirstChild("PlayerGui")
+    if not pg then return "0" end
+    
+    -- Utilisation du chemin exact trouvé dans l'explorateur du jeu
+    local o = pg
+    local path = {"CrossPlatform", "Halloween2026", "MainEvent", "Main", "ShopBundles", "Title", "Tokens", "Container", "TextLabel"}
+    
+    for _, name in ipairs(path) do
+        o = o and o:FindFirstChild(name)
+        if not o then break end
     end
-    return o and o:IsA("TextLabel") and o.Text or "?"
+    
+    if o and o:IsA("TextLabel") then
+        -- Nettoie le texte pour ne garder que les chiffres si besoin
+        return tostring(o.Text)
+    end
+    
+    -- Heuristique de secours alternative si le chemin principal a échoué
+    local alt = pg:FindFirstChild("TextLabel", true) -- Recherche récursive si nécessaire
+    return "En attente..."
 end
 
 -- PlatformStand : actif pendant tout ce que le script contrôle (vol, planque, zone, vote)
@@ -1965,8 +1980,8 @@ local function voteLoop(best)
     if CFG.Notify and UILib and UILib.MakeDynamicNotification then
         pcall(function()
             notif = UILib:MakeDynamicNotification({
-                Name = "Vote : " .. best.name,
-                Content = "Votes : " .. (lbl and lbl.Text or "?"),
+                Name = "Map : " .. best.name,
+                Content = (lbl and lbl.Text or "?"), -- "Votes : " .. 
                 Time = 4,
             })
         end)
@@ -1998,7 +2013,7 @@ local function voteLoop(best)
             end
         end
 
-        if notif and lbl then pcall(function() notif:SetContent("Votes : " .. lbl.Text) end) end
+        if notif and lbl then pcall(function() notif:SetContent(lbl.Text) end) end -- "Votes : " .. 
 
         if changed then
             fails = 0
@@ -2432,7 +2447,7 @@ pcall(function()
             -- Sélection initiale des champs affichés dans l'embed.
             Fields = {
                 Executor = true,
-                State = true,
+                State = false,
                 Target = false,
                 PlayerCount = true,
                 PlaceId = false,
@@ -2455,11 +2470,13 @@ pcall(function()
             },
 
             -- Champs personnalisés propres à CandyFarm.
+                        -- [CORRECTIF CRITIQUE] Sécurisation des champs personnalisés
             CustomFields = {
                 Tokens = {
                     Name = "Bonbons du compte",
                     Get = function(payload, context)
-                        return CTX.getTokens()
+                        local tokens = CTX.getTokens()
+                        return (tokens and tokens ~= "?") and tokens or "Chargement..."
                     end,
                     Inline = true,
                 },
@@ -2467,7 +2484,9 @@ pcall(function()
                 Phase = {
                     Name = "Phase actuelle",
                     Get = function(payload, context)
-                        return phase
+                        -- Utilise une vérification sécurisée pour éviter le crash si la variable est vide
+                        local currentPhase = _G.phase or phase or "Lobby"
+                        return tostring(currentPhase):upper()
                     end,
                     Inline = true,
                 },
@@ -2475,7 +2494,7 @@ pcall(function()
                 Map = {
                     Name = "Dernière map votée",
                     Get = function(payload, context)
-                        return CTX.map or "Aucune"
+                        return (CTX.map and CTX.map ~= "Aucune") and CTX.map or "En attente..."
                     end,
                     Inline = true,
                 },
@@ -2483,7 +2502,7 @@ pcall(function()
                 Candies = {
                     Name = "Bonbons récoltés (session)",
                     Get = function(payload, context)
-                        return ST.candies or 0
+                        return tonumber(ST.candies) or 0
                     end,
                     Inline = true,
                 },
@@ -2491,7 +2510,7 @@ pcall(function()
                 Rounds = {
                     Name = "Manches terminées",
                     Get = function(payload, context)
-                        return ST.rounds or 0
+                        return tonumber(ST.rounds) or 0
                     end,
                     Inline = true,
                 },
@@ -2499,7 +2518,7 @@ pcall(function()
                 Kills = {
                     Name = "Kills (session)",
                     Get = function(payload, context)
-                        return ST.kills or 0
+                        return tonumber(ST.kills) or 0
                     end,
                     Inline = true,
                 },
@@ -2507,7 +2526,7 @@ pcall(function()
                 Guns = {
                     Name = "Armes récupérées",
                     Get = function(payload, context)
-                        return ST.guns or 0
+                        return tonumber(ST.guns) or 0
                     end,
                     Inline = true,
                 },
@@ -2515,7 +2534,7 @@ pcall(function()
                 Votes = {
                     Name = "Votes effectués",
                     Get = function(payload, context)
-                        return ST.votes or 0
+                        return tonumber(ST.votes) or 0
                     end,
                     Inline = true,
                 },
@@ -2524,9 +2543,9 @@ pcall(function()
                     Name = "Rôles (session)",
                     Get = function(payload, context)
                         return ("Murder : %d | Sheriff : %d | Innocent : %d"):format(
-                            ST.asMurder or 0,
-                            ST.asSheriff or 0,
-                            ST.asInnocent or 0
+                            tonumber(ST.asMurder) or 0,
+                            tonumber(ST.asSheriff) or 0,
+                            tonumber(ST.asInnocent) or 0
                         )
                     end,
                     Inline = false,
@@ -2535,7 +2554,7 @@ pcall(function()
                 Kicks = {
                     Name = "Déconnexions",
                     Get = function(payload, context)
-                        return S.kicks or 0
+                        return (S and tonumber(S.kicks)) or 0
                     end,
                     Inline = true,
                 },
@@ -2543,11 +2562,7 @@ pcall(function()
                 Session = {
                     Name = "Durée de session",
                     Get = function(payload, context)
-                        local elapsed = math.max(
-                            0,
-                            math.floor(os.clock() - sessionStart)
-                        )
-
+                        local elapsed = math.max(0, math.floor(os.clock() - sessionStart))
                         return ("%02d:%02d:%02d"):format(
                             math.floor(elapsed / 3600),
                             math.floor(elapsed / 60) % 60,
