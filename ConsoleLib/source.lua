@@ -7,7 +7,7 @@ local LiveConsole = (function()
     assert(player, "LiveConsole doit être utilisée côté client")
 
     local Console = {
-        MaxLines = 300,
+        MaxLines = 500,
         ForwardToConsole = false,
         ToggleKey = Enum.KeyCode.RightShift
     }
@@ -130,10 +130,25 @@ local LiveConsole = (function()
     }, body)
     create("UICorner", {CornerRadius = UDim.new(0, 5)}, clearButton)
 
+    local copyButton = create("TextButton", {
+        Name = "Copy",
+        Position = UDim2.new(0, 92, 1, -34),
+        Size = UDim2.fromOffset(78, 27),
+        BackgroundColor3 = Color3.fromRGB(45, 90, 75),
+        Text = "COPIER",
+        TextColor3 = Color3.fromRGB(230, 255, 240),
+        TextSize = 11,
+        Font = Enum.Font.Code
+    }, body)
+
+    create("UICorner", {
+        CornerRadius = UDim.new(0, 5)
+    }, copyButton)
+
     create("TextLabel", {
         Name = "Hint",
-        Position = UDim2.new(0, 96, 1, -34),
-        Size = UDim2.new(1, -105, 0, 27),
+        Position = UDim2.new(0, 180, 1, -34),
+        Size = UDim2.new(1, -189, 0, 27),
         BackgroundTransparency = 1,
         Text = "RightShift : afficher / masquer",
         TextColor3 = Color3.fromRGB(130, 140, 160),
@@ -323,6 +338,36 @@ local LiveConsole = (function()
 
     track(clearButton.Activated:Connect(function()
         Console:Clear()
+    end))
+
+    track(copyButton.Activated:Connect(function()
+        local content = {}
+
+        for _, row in ipairs(lines) do
+            if row and row.Parent then
+                table.insert(content, row.Text)
+            end
+        end
+
+        local clipboardText = table.concat(content, "\n")
+
+        -- Fonctions de presse-papiers selon l'exécuteur
+        local clipboardFn = setclipboard or toclipboard or set_clipboard
+
+        if type(clipboardFn) ~= "function" then
+            Console:Error("Copie impossible : fonction clipboard indisponible.")
+            return
+        end
+
+        local ok, err = pcall(clipboardFn, clipboardText)
+
+        if ok then
+            Console:Success(
+                "Console copiée : " .. tostring(#content) .. " lignes."
+            )
+        else
+            Console:Error("Échec de la copie :", tostring(err))
+        end
     end))
 
     track(minimize.Activated:Connect(function()
