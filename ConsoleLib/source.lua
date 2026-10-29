@@ -388,3 +388,5 @@ end)()
 
 -- Active l'interception pour les print() et warn() suivants.
 LiveConsole:AttachPrint()
+
+return LiveConsole
